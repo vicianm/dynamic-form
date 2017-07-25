@@ -1,4 +1,4 @@
-package plaut.sk.skplautdynamicformheader;
+package plaut.sk.dynamic_form_header;
 
 import org.junit.Test;
 

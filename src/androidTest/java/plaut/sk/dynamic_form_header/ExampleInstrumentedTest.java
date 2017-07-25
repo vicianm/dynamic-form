@@ -1,4 +1,4 @@
-package plaut.sk.skplautdynamicformheader;
+package plaut.sk.dynamic_form_header;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
@@ -21,6 +21,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
 
-        assertEquals("plaut.sk.skplautdynamicformheader.test", appContext.getPackageName());
+        assertEquals("plaut.sk.dynamic_form_header.test", appContext.getPackageName());
     }
 }
