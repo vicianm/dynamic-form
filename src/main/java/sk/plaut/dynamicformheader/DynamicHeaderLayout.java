@@ -7,13 +7,12 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
 import plaut.sk.dynamic_form_header.R;
 
-public class DynamicHeaderLayout extends LinearLayout {
+public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollChangeListener {
 
     private boolean inflateFinished = false;
 
@@ -165,6 +164,11 @@ public class DynamicHeaderLayout extends LinearLayout {
     @Override
     protected DynamicHeaderLayout.LayoutParams generateLayoutParams(ViewGroup.LayoutParams p) {
         return new LayoutParams(p);
+    }
+
+    @Override
+    public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
+        int viewportHeight = v.getHeight();
     }
 
     private static class LayoutParams extends LinearLayout.LayoutParams {
