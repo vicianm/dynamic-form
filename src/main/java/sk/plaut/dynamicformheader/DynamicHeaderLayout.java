@@ -107,8 +107,6 @@ public class DynamicHeaderLayout extends LinearLayout {
 
     @Override
     public void addView(View child, int index, ViewGroup.LayoutParams params) {
-        Log.i("DynamicHeaderLayout", "View child, int index, ViewGroup.LayoutParams params");
-
         if (inflateFinished) {
             super.addView(child, index, params);
         } else {
@@ -118,20 +116,29 @@ public class DynamicHeaderLayout extends LinearLayout {
 
     @Override
     public void addView(View child, int index) {
-        Log.i("DynamicHeaderLayout", "View child, int index");
-        super.addView(child, index);
+        if (inflateFinished) {
+            super.addView(child, index);
+        } else {
+            formLayout.addView(child, index);
+        }
     }
 
     @Override
     public void addView(View child, ViewGroup.LayoutParams params) {
-        Log.i("DynamicHeaderLayout", "View child, ViewGroup.LayoutParams params");
-        super.addView(child, params);
+        if (inflateFinished) {
+            super.addView(child, params);
+        } else {
+            formLayout.addView(child, params);
+        }
     }
 
     @Override
     public void addView(View child, int width, int height) {
-        Log.i("DynamicHeaderLayout", "View child, int width, int height");
-        super.addView(child, width, height);
+        if (inflateFinished) {
+            super.addView(child, width, height);
+        } else {
+            formLayout.addView(child, width, height);
+        }
     }
 
     @Override
