@@ -13,7 +13,7 @@ import android.widget.ScrollView;
 
 import plaut.sk.dynamic_form_header.R;
 
-public class DynamicHeaderLayout extends FrameLayout {
+public class DynamicHeaderLayout extends LinearLayout {
 
     private boolean inflateFinished = false;
 
@@ -58,16 +58,28 @@ public class DynamicHeaderLayout extends FrameLayout {
     }
 
     protected void initLayout() {
-
         formLayout = createFormLayout();
         formLayoutScrollView = createFormLayoutScrollView();
         headerLayout = createHeaderLayout();
         footerLayout = createFooterLayout();
 
+        formLayout.setZ(0);
+        headerLayout.setZ(1);
+        footerLayout.setZ(1);
+
         formLayoutScrollView.addView(formLayout);
-        super.addView(formLayoutScrollView, 0, generateDefaultLayoutParams());
-        super.addView(headerLayout, 1, generateDefaultLayoutParams());
-        super.addView(footerLayout, 2, generateDefaultLayoutParams());
+        super.addView(formLayoutScrollView, 0, new LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.MATCH_PARENT
+        ));
+        super.addView(headerLayout, 1, new LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
+        ));
+        super.addView(footerLayout, 2, new LinearLayout.LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
+        ));
     }
 
     protected LinearLayout createHeaderLayout() {
@@ -128,9 +140,29 @@ public class DynamicHeaderLayout extends FrameLayout {
         inflateFinished = true;
     }
 
+    @Override
+    protected boolean checkLayoutParams(ViewGroup.LayoutParams p) {
+        return p instanceof LinearLayout.LayoutParams;
+    }
+
+    @Override
+    protected DynamicHeaderLayout.LayoutParams generateDefaultLayoutParams() {
+        return new LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+    }
+
+    @Override
+    public DynamicHeaderLayout.LayoutParams generateLayoutParams(AttributeSet attributeSet) {
+        return new LayoutParams(getContext(), attributeSet);
+    }
+
+    @Override
+    protected DynamicHeaderLayout.LayoutParams generateLayoutParams(ViewGroup.LayoutParams p) {
+        return new LayoutParams(p);
+    }
+
     private static class LayoutParams extends LinearLayout.LayoutParams {
 
-        private boolean pinned = false;
+        private boolean pinAllowed = false;
 
         public LayoutParams(Context c, AttributeSet attrs) {
             super(c, attrs);
@@ -148,16 +180,15 @@ public class DynamicHeaderLayout extends FrameLayout {
         private void readCustomParams(Context c, AttributeSet attrs){
             TypedArray typedArray = c.obtainStyledAttributes(attrs, R.styleable.DynamicHeaderLayoutParams);
             try {
-                this.pinned = typedArray.getBoolean(R.styleable.DynamicHeaderLayoutParams_pinned, false);
+                this.pinAllowed = typedArray.getBoolean(R.styleable.DynamicHeaderLayoutParams_pinAllowed, false);
             } finally {
                 typedArray.recycle();
             }
         }
 
-        public boolean isPinned() {
-            return pinned;
+        public boolean isPinAllowed() {
+            return pinAllowed;
         }
-
     }
 
 }
