@@ -14,9 +14,10 @@ public class DynamicHeaderLayout extends FrameLayout {
 
     private boolean inflateFinished = false;
 
-    private LinearLayout formLayout;
-
+    private LinearLayout headerLayout;
+    private LinearLayout footerLayout;
     private ScrollView formLayoutScrollView;
+    private LinearLayout formLayout;
 
     public DynamicHeaderLayout(Context context) {
         super(context);
@@ -49,13 +50,33 @@ public class DynamicHeaderLayout extends FrameLayout {
         return formLayout;
     }
 
+    public ScrollView getFormLayoutScrollView() {
+        return formLayoutScrollView;
+    }
+
     protected void initLayout() {
 
         formLayout = createFormLayout();
         formLayoutScrollView = createFormLayoutScrollView();
+        headerLayout = createHeaderLayout();
+        footerLayout = createFooterLayout();
 
         formLayoutScrollView.addView(formLayout);
         super.addView(formLayoutScrollView, 0, generateDefaultLayoutParams());
+        super.addView(headerLayout, 1, generateDefaultLayoutParams());
+        super.addView(footerLayout, 2, generateDefaultLayoutParams());
+    }
+
+    protected LinearLayout createHeaderLayout() {
+        LinearLayout headerLayout = new LinearLayout(getContext());
+        headerLayout.setOrientation(LinearLayout.VERTICAL);
+        return headerLayout;
+    }
+
+    protected LinearLayout createFooterLayout() {
+        LinearLayout footerLayout = new LinearLayout(getContext());
+        footerLayout.setOrientation(LinearLayout.VERTICAL);
+        return footerLayout;
     }
 
     protected ScrollView createFormLayoutScrollView() {
@@ -103,4 +124,5 @@ public class DynamicHeaderLayout extends FrameLayout {
         super.onFinishInflate();
         inflateFinished = true;
     }
+
 }
