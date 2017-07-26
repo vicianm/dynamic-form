@@ -151,7 +151,7 @@ public class DynamicFormLayout extends LinearLayout {
                     continue;
                 }
                 case 1: {
-//                            centerScrollView.addView(form.getView());
+//                            centerScrollView.addView(form.getFormView());
                     continue;
                 }
                 case 2: {

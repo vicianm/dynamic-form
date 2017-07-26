@@ -94,6 +94,40 @@ public class FormInnerLinearLayout extends LinearLayout {
         return new CustomLayoutPrams(p);
     }
 
+
+
+
+
+
+    @Override
+    public void addView(View child) {
+        super.addView(child);
+    }
+
+    @Override
+    public void addView(View child, int index, ViewGroup.LayoutParams params) {
+        super.addView(child, index, params);
+    }
+
+    @Override
+    public void addView(View child, int index) {
+        super.addView(child, index);
+    }
+
+    @Override
+    public void addView(View child, ViewGroup.LayoutParams params) {
+        super.addView(child, params);
+    }
+
+    @Override
+    public void addView(View child, int width, int height) {
+        super.addView(child, width, height);
+    }
+
+
+
+
+
     //mysli na to, ze su to layoutparams z LinearLayout
     private static class CustomLayoutPrams extends LinearLayout.LayoutParams {
 
@@ -114,13 +148,6 @@ public class FormInnerLinearLayout extends LinearLayout {
         }
 
         private void readCustomParams(Context c, AttributeSet attrs){
-            TypedArray typedArray = c.obtainStyledAttributes(attrs, R.styleable.DynamicHeaderParams);
-            try {
-                this.freezed = typedArray.getBoolean(R.styleable.DynamicHeaderParams_freezed, false);
-                this.loosed = typedArray.getBoolean(R.styleable.DynamicHeaderParams_loosed, false);
-            } finally {
-                typedArray.recycle();
-            }
         }
 
         public boolean isFreezed() {

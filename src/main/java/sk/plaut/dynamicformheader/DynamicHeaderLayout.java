@@ -5,8 +5,10 @@ import android.content.res.TypedArray;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
@@ -24,32 +26,30 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
     private ScrollView formLayoutScrollView;
     private LinearLayout formLayout;
 
-    private Collection<DynamicHeaderData> headers = new LinkedList<>();
+    private Collection<PinnableViewData> pinnableViewData = new LinkedList<>();
 
     public DynamicHeaderLayout(Context context) {
         super(context);
-        Log.i("DynamicHeaderLayout", "DynamicHeaderLayout(Context context)");
+        initLayout();
     }
 
     public DynamicHeaderLayout(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        Log.i("DynamicHeaderLayout", "DynamicHeaderLayout(Context context, @Nullable AttributeSet attrs)");
         initLayout();
     }
 
     public DynamicHeaderLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        Log.i("DynamicHeaderLayout", "DynamicHeaderLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr)");
+        initLayout();
     }
 
     public DynamicHeaderLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
-        Log.i("DynamicHeaderLayout", "DynamicHeaderLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes)");
+        initLayout();
     }
 
     @Override
     public void addView(View child) {
-        Log.i("DynamicHeaderLayout", "child");
         super.addView(child);
     }
 
@@ -62,27 +62,39 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
     }
 
     protected void initLayout() {
+
+        FrameLayout container = new FrameLayout(getContext());
+
         formLayout = createFormLayout();
         formLayoutScrollView = createFormLayoutScrollView();
         headerLayout = createHeaderLayout();
         footerLayout = createFooterLayout();
 
-        formLayout.setZ(0);
-        headerLayout.setZ(1);
-        footerLayout.setZ(1);
-
+        // ScrollView
         formLayoutScrollView.addView(formLayout);
-        super.addView(formLayoutScrollView, 0, new LinearLayout.LayoutParams(
+        container.addView(formLayoutScrollView, 0, new FrameLayout.LayoutParams(
                 LayoutParams.MATCH_PARENT,
                 LayoutParams.MATCH_PARENT
         ));
-        super.addView(headerLayout, 1, new LinearLayout.LayoutParams(
+
+        // Header
+        FrameLayout.LayoutParams headerParams = new FrameLayout.LayoutParams(
                 LayoutParams.MATCH_PARENT,
                 LayoutParams.WRAP_CONTENT
-        ));
-        super.addView(footerLayout, 2, new LinearLayout.LayoutParams(
+        );
+        container.addView(headerLayout, 1, headerParams);
+
+        // Footer
+        FrameLayout.LayoutParams footerParams = new FrameLayout.LayoutParams(
                 LayoutParams.MATCH_PARENT,
                 LayoutParams.WRAP_CONTENT
+        );
+        footerParams.gravity = Gravity.BOTTOM;
+        container.addView(footerLayout, 1, footerParams);
+
+        super.addView(container, 0, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
         ));
     }
 
@@ -100,6 +112,7 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
 
     protected ScrollView createFormLayoutScrollView() {
         ScrollView scrollView = new ScrollView(getContext());
+        scrollView.setOnScrollChangeListener(this);
         return scrollView;
     }
 
@@ -115,6 +128,7 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
             super.addView(child, index, params);
         } else {
             formLayout.addView(child, index, params);
+            updateHeaderData(child);
         }
     }
 
@@ -124,6 +138,7 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
             super.addView(child, index);
         } else {
             formLayout.addView(child, index);
+            updateHeaderData(child);
         }
     }
 
@@ -133,6 +148,7 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
             super.addView(child, params);
         } else {
             formLayout.addView(child, params);
+            updateHeaderData(child);
         }
     }
 
@@ -142,6 +158,7 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
             super.addView(child, width, height);
         } else {
             formLayout.addView(child, width, height);
+            updateHeaderData(child);
         }
     }
 
@@ -155,8 +172,8 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
         if (layoutParams instanceof DynamicHeaderLayout.LayoutParams) {
             boolean pinAllowed = ((LayoutParams) layoutParams).pinAllowed;
             if (pinAllowed) {
-                DynamicHeaderData headerData = new DynamicHeaderData(child);
-                headers.add(headerData);
+                PinnableViewData headerData = new PinnableViewData(child);
+                pinnableViewData.add(headerData);
             }
         }
     }
@@ -189,9 +206,45 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
 
     @Override
     public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
-        int viewportHeight = v.getHeight();
 
+        // Check 'pin allowed' views visibility
+        boolean updateHeaders = false;
+        for (PinnableViewData data : pinnableViewData) {
+            float viewY = data.getFormView().getY();
+            if (scrollY > viewY + data.getFormView().getHeight()) {
+                updateHeaders |= data.update(PinnableViewData.State.PINNED_UP);
+            } else if (scrollY+v.getHeight() < viewY) {
+                updateHeaders |= data.update(PinnableViewData.State.PINNED_DOWN);
+            } else {
+                updateHeaders |= data.update(PinnableViewData.State.UNPINNED);
+            }
+        }
 
+        Log.i("DynamicHeaderLayout", "updateHeaders: " + updateHeaders);
+
+        // Update header/footer containers if any change occurred
+        if (updateHeaders) {
+            for (PinnableViewData data : pinnableViewData) {
+                if (data.isUpdate()) {
+
+                    // Ensure child is removed from parent
+                    headerLayout.removeView(data.getPinnedView());
+                    footerLayout.removeView(data.getPinnedView());
+
+                    switch(data.getState()) {
+                        case PINNED_UP:
+                            headerLayout.addView(data.getPinnedView());
+                            break;
+                        case PINNED_DOWN:
+                            footerLayout.addView(data.getPinnedView(), 0);
+                            break;
+                        case UNPINNED:
+                            // nothing to do
+                            break;
+                    }
+                }
+            }
+        }
     }
 
     private static class LayoutParams extends LinearLayout.LayoutParams {
