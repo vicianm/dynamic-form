@@ -1,6 +1,7 @@
 package sk.plaut.dynamicformheader;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -9,6 +10,8 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+
+import plaut.sk.dynamic_form_header.R;
 
 public class DynamicHeaderLayout extends FrameLayout {
 
@@ -123,6 +126,38 @@ public class DynamicHeaderLayout extends FrameLayout {
     protected void onFinishInflate() {
         super.onFinishInflate();
         inflateFinished = true;
+    }
+
+    private static class LayoutParams extends LinearLayout.LayoutParams {
+
+        private boolean pinned = false;
+
+        public LayoutParams(Context c, AttributeSet attrs) {
+            super(c, attrs);
+            this.readCustomParams(c, attrs);
+        }
+
+        public LayoutParams(int width, int height) {
+            super(width, height);
+        }
+
+        public LayoutParams(ViewGroup.LayoutParams layoutParams) {
+            super(layoutParams);
+        }
+
+        private void readCustomParams(Context c, AttributeSet attrs){
+            TypedArray typedArray = c.obtainStyledAttributes(attrs, R.styleable.DynamicHeaderLayoutParams);
+            try {
+                this.pinned = typedArray.getBoolean(R.styleable.DynamicHeaderLayoutParams_pinned, false);
+            } finally {
+                typedArray.recycle();
+            }
+        }
+
+        public boolean isPinned() {
+            return pinned;
+        }
+
     }
 
 }
