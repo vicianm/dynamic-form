@@ -10,6 +10,9 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
+import java.util.Collection;
+import java.util.LinkedList;
+
 import plaut.sk.dynamic_form_header.R;
 
 public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollChangeListener {
@@ -20,6 +23,8 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
     private LinearLayout footerLayout;
     private ScrollView formLayoutScrollView;
     private LinearLayout formLayout;
+
+    private Collection<DynamicHeaderData> headers = new LinkedList<>();
 
     public DynamicHeaderLayout(Context context) {
         super(context);
@@ -140,6 +145,22 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
         }
     }
 
+    /**
+     * Adds <code>child</code> to header data if child's
+     * <code>pinAllowed</code> attribute is set.
+     * @param child
+     */
+    private void updateHeaderData(View child) {
+        ViewGroup.LayoutParams layoutParams = child.getLayoutParams();
+        if (layoutParams instanceof DynamicHeaderLayout.LayoutParams) {
+            boolean pinAllowed = ((LayoutParams) layoutParams).pinAllowed;
+            if (pinAllowed) {
+                DynamicHeaderData headerData = new DynamicHeaderData(child);
+                headers.add(headerData);
+            }
+        }
+    }
+
     @Override
     protected void onFinishInflate() {
         super.onFinishInflate();
@@ -169,6 +190,8 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
     @Override
     public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
         int viewportHeight = v.getHeight();
+
+
     }
 
     private static class LayoutParams extends LinearLayout.LayoutParams {

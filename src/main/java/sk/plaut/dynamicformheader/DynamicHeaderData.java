@@ -19,10 +19,25 @@ public class DynamicHeaderData {
      */
     private View view;
 
-    public DynamicHeaderData(State state, boolean update, View view) {
-        this.state = state;
-        this.update = update;
+    public DynamicHeaderData(View view) {
         this.view = view;
+    }
+
+    public State getState() {
+        return state;
+    }
+
+    public boolean isUpdate() {
+        return update;
+    }
+
+    public View getView() {
+        return view;
+    }
+
+    public void update(State state) {
+        update = this.state != state;
+        if (update) this.state = state;
     }
 
 }
