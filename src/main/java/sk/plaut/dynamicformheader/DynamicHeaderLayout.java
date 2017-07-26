@@ -8,12 +8,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 
 public class DynamicHeaderLayout extends FrameLayout {
 
     private boolean inflateFinished = false;
 
     private LinearLayout formLayout;
+
+    private ScrollView formLayoutScrollView;
 
     public DynamicHeaderLayout(Context context) {
         super(context);
@@ -46,19 +49,23 @@ public class DynamicHeaderLayout extends FrameLayout {
         return formLayout;
     }
 
-    private void initLayout() {
+    protected void initLayout() {
+
         formLayout = createFormLayout();
-        super.addView(formLayout, 0, formLayout.getLayoutParams());
+        formLayoutScrollView = createFormLayoutScrollView();
+
+        formLayoutScrollView.addView(formLayout);
+        super.addView(formLayoutScrollView, 0, generateDefaultLayoutParams());
     }
 
-    public LinearLayout createFormLayout() {
+    protected ScrollView createFormLayoutScrollView() {
+        ScrollView scrollView = new ScrollView(getContext());
+        return scrollView;
+    }
+
+    protected LinearLayout createFormLayout() {
         LinearLayout formLayout = new LinearLayout(getContext());
         formLayout.setOrientation(LinearLayout.VERTICAL);
-        FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(
-                LayoutParams.MATCH_PARENT,
-                LayoutParams.MATCH_PARENT
-        );
-        formLayout.setLayoutParams(layoutParams);
         return formLayout;
     }
 
