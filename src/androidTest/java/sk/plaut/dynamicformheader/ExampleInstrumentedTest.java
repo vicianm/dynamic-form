@@ -1,4 +1,4 @@
-package plaut.sk.dynamic_form_header;
+package sk.plaut.dynamicformheader;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
