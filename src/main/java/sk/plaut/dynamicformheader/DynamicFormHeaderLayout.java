@@ -17,7 +17,14 @@ import java.util.LinkedList;
 
 import plaut.sk.dynamic_form_header.R;
 
-public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollChangeListener {
+/**
+ * <p>Layout which recognizes <code>pinAllowed</code> attributes
+ * in views defined in layout XML file.</p>
+ *
+ * <p>View with <code>pinAllowed="true"</code> will be pinned to
+ * footer or header of the form is it is no longer visible.</p>
+ */
+public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScrollChangeListener {
 
     private boolean inflateFinished = false;
 
@@ -28,22 +35,22 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
 
     private Collection<PinnableViewData> pinnableViewData = new LinkedList<>();
 
-    public DynamicHeaderLayout(Context context) {
+    public DynamicFormHeaderLayout(Context context) {
         super(context);
         initLayout();
     }
 
-    public DynamicHeaderLayout(Context context, @Nullable AttributeSet attrs) {
+    public DynamicFormHeaderLayout(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         initLayout();
     }
 
-    public DynamicHeaderLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public DynamicFormHeaderLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         initLayout();
     }
 
-    public DynamicHeaderLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    public DynamicFormHeaderLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         initLayout();
     }
@@ -169,7 +176,7 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
      */
     private void updateHeaderData(View child) {
         ViewGroup.LayoutParams layoutParams = child.getLayoutParams();
-        if (layoutParams instanceof DynamicHeaderLayout.LayoutParams) {
+        if (layoutParams instanceof DynamicFormHeaderLayout.LayoutParams) {
             boolean pinAllowed = ((LayoutParams) layoutParams).pinAllowed;
             if (pinAllowed) {
                 PinnableViewData headerData = new PinnableViewData(child);
@@ -190,17 +197,17 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
     }
 
     @Override
-    protected DynamicHeaderLayout.LayoutParams generateDefaultLayoutParams() {
+    protected DynamicFormHeaderLayout.LayoutParams generateDefaultLayoutParams() {
         return new LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
     }
 
     @Override
-    public DynamicHeaderLayout.LayoutParams generateLayoutParams(AttributeSet attributeSet) {
+    public DynamicFormHeaderLayout.LayoutParams generateLayoutParams(AttributeSet attributeSet) {
         return new LayoutParams(getContext(), attributeSet);
     }
 
     @Override
-    protected DynamicHeaderLayout.LayoutParams generateLayoutParams(ViewGroup.LayoutParams p) {
+    protected DynamicFormHeaderLayout.LayoutParams generateLayoutParams(ViewGroup.LayoutParams p) {
         return new LayoutParams(p);
     }
 
