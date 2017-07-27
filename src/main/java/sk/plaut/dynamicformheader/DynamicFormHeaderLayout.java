@@ -201,12 +201,16 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
      * @param child
      */
     private void updateHeaderData(View child) {
+
         ViewGroup.LayoutParams layoutParams = child.getLayoutParams();
         if (layoutParams instanceof DynamicFormHeaderLayout.LayoutParams) {
             boolean pinAllowed = ((LayoutParams) layoutParams).pinAllowed;
+
             if (pinAllowed) {
                 PinnableViewData headerData = new PinnableViewData(child);
                 View formView = headerData.getFormView();
+
+                // Get header view instance from callback method
                 if(this.onCreateHeaderMethod != null){
                     Object result = this.onCreateHeaderMethod.invoke(formView);
                     if(result instanceof  View){
@@ -215,6 +219,8 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                         throw new RuntimeException("Method invocation of onCreateHeaderMethod did not return new view");
                     }
                 }
+
+                // Get footer view instance from callback method
                 if(this.onCreateFooterMethod != null){
                     Object result = this.onCreateFooterMethod.invoke(formView);
                     if(result instanceof  View){
@@ -223,9 +229,29 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                         throw new RuntimeException("Method invocation of onCreateFooterMethod did not return new view");
                     }
                 }
+
+                // Configure on click listeners which
+                // scrolls the form in a way that section
+                // under the header/footer will be visible.
+                setHeaderOnClickListener(headerData.getFormView(), headerData.getPinnedViewHeader());
+                setHeaderOnClickListener(headerData.getFormView(), headerData.getPinnedViewFooter());
+
                 pinnableViewData.add(headerData);
             }
         }
+    }
+
+    /**
+     * Sets click listener for <code>pinnedView</code> which scrolls the form
+     * in a way that section under the header/footer will be visible.
+     */
+    protected void setHeaderOnClickListener(final View formView, View pinnedView) {
+        pinnedView.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                formLayoutScrollView.smoothScrollTo(0, (int)formView.getY());
+            }
+        });
     }
 
     @Override
