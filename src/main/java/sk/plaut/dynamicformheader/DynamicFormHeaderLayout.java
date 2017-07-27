@@ -15,8 +15,6 @@ import android.widget.ScrollView;
 import java.util.Collection;
 import java.util.LinkedList;
 
-import plaut.sk.dynamic_form_header.R;
-
 /**
  * <p>Layout which recognizes <code>pinAllowed</code> attributes
  * in views defined in layout XML file.</p>
