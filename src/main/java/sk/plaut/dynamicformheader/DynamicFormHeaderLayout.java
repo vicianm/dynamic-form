@@ -6,19 +6,17 @@ import android.content.res.TypedArray;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * <p>Layout which recognizes <code>pinAllowed</code> attributes
@@ -36,7 +34,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     private ScrollView formLayoutScrollView;
     private LinearLayout formLayout;
 
-    private Collection<PinnableViewData> pinnableViewData = new LinkedList<>();
+    private List<PinnableViewData> pinnableViewData = new LinkedList<>();
 
     private MethodWithContext onCreateHeaderMethod;
     private MethodWithContext onCreateFooterMethod;
@@ -245,11 +243,29 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
      * Sets click listener for <code>pinnedView</code> which scrolls the form
      * in a way that section under the header/footer will be visible.
      */
-    protected void setHeaderOnClickListener(final View formView, View pinnedView) {
+    protected void setHeaderOnClickListener(final View formView, final View pinnedView) {
         pinnedView.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                formLayoutScrollView.smoothScrollTo(0, (int)formView.getY());
+
+                // Calculate header height at time user scrolls the
+                // form in a such way that <code>formView</code> is
+                // the first visible component of the form.
+                // We can rely on the fact that <code>pinnableViewData</code>
+                // are ordered the same way as views are shown in header/footer.
+                int headerHeigthAfterScroll = 0;
+                for (PinnableViewData data : pinnableViewData) {
+
+                    // We are done if we reached the view on which user clicked
+                    boolean done =
+                            pinnedView == data.getPinnedViewHeader() ||
+                            pinnedView == data.getPinnedViewFooter();
+                    if (done) break;
+
+                    headerHeigthAfterScroll += data.getPinnedViewHeader().getHeight();
+                }
+                formLayoutScrollView.smoothScrollTo(0,
+                        (int)formView.getY() - headerHeigthAfterScroll);
             }
         });
     }
