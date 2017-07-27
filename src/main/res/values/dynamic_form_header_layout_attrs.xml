@@ -3,5 +3,10 @@
     <declare-styleable name="DynamicFormHeaderLayoutAttrs">
         <attr name="onCreateHeader" format="string" />
         <attr name="onCreateFooter" format="string" />
+        <attr name="formPadding" format="dimension" />
+        <attr name="formPaddingLeft" format="dimension" />
+        <attr name="formPaddingTop" format="dimension" />
+        <attr name="formPaddingRight" format="dimension" />
+        <attr name="formPaddingBottom" format="dimension" />
     </declare-styleable>
 </resources>

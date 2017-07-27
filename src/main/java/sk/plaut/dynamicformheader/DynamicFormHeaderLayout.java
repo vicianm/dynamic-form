@@ -34,6 +34,12 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     private ScrollView formLayoutScrollView;
     private LinearLayout formLayout;
 
+    private boolean delegatedFormPaddingSet = false;
+    private int delegatedFormPaddingLeft = -1;
+    private int delegatedFormPaddingTop = -1;
+    private int delegatedFormPaddingRight = -1;
+    private int delegatedFormPaddingBottom = -1;
+
     private List<PinnableViewData> pinnableViewData = new LinkedList<>();
 
     private MethodWithContext onCreateHeaderMethod;
@@ -53,8 +59,8 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
 
     public DynamicFormHeaderLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
-        initLayout();
         this.resolveAttributes(context, attrs, defStyleAttr, defStyleRes);
+        initLayout();
     }
 
     private void resolveAttributes(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes){
@@ -63,19 +69,52 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                 R.styleable.DynamicFormHeaderLayoutAttrs,
                 defStyleAttr, defStyleRes);
         try {
+
             if (context.isRestricted()) {
                 throw new IllegalStateException("The customAttribute: onCreateFooter / onCreateHeader cannot be used within a restricted context");
             }
+
             final String onCreateHeaderReference = a.getString(R.styleable.DynamicFormHeaderLayoutAttrs_onCreateHeader);
             if (onCreateHeaderReference != null) {
                 this.onCreateHeaderMethod = resolveMethod(this, onCreateHeaderReference);
             }
+
             final String onCreateFooterReference = a.getString(R.styleable.DynamicFormHeaderLayoutAttrs_onCreateFooter);
             if (onCreateFooterReference != null) {
                 this.onCreateFooterMethod = resolveMethod(this, onCreateFooterReference);
             }
+
+            resolvePaddingAttributes(a);
+
         } finally {
             a.recycle();
+        }
+    }
+
+    private void resolvePaddingAttributes(TypedArray a) {
+        int delegatedFormPadding = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_formPadding, -1);
+        delegatedFormPaddingLeft = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_formPaddingLeft, -1);
+        delegatedFormPaddingTop = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_formPaddingTop, -1);
+        delegatedFormPaddingRight = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_formPaddingRight, -1);
+        delegatedFormPaddingBottom = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_formPaddingBottom, -1);
+
+        // Check whether padding and formPaddingLeft/Top/Right/Bottom are used exclusively
+        if (delegatedFormPaddingLeft > -1 || delegatedFormPaddingTop > -1 || delegatedFormPaddingRight > -1 || delegatedFormPaddingBottom > -1) {
+            if (delegatedFormPadding > -1) {
+                throw new IllegalStateException("Both 'formPadding' and 'formPaddingLeft/Top/Right/Bottom' cannot be defined simultaneously.");
+            }
+            if (delegatedFormPaddingLeft < 0) delegatedFormPaddingLeft = 0;
+            if (delegatedFormPaddingTop < 0) delegatedFormPaddingTop = 0;
+            if (delegatedFormPaddingRight < 0) delegatedFormPaddingRight = 0;
+            if (delegatedFormPaddingBottom < 0) delegatedFormPaddingBottom = 0;
+            delegatedFormPaddingSet = true;
+        }
+        if (delegatedFormPadding > -1) {
+            delegatedFormPaddingLeft = delegatedFormPadding;
+            delegatedFormPaddingTop = delegatedFormPadding;
+            delegatedFormPaddingRight = delegatedFormPadding;
+            delegatedFormPaddingBottom = delegatedFormPadding;
+            delegatedFormPaddingSet = true;
         }
     }
 
@@ -132,12 +171,14 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     protected LinearLayout createHeaderLayout() {
         LinearLayout headerLayout = new LinearLayout(getContext());
         headerLayout.setOrientation(LinearLayout.VERTICAL);
+        setHorizontalFormPaddingIfSet(headerLayout);
         return headerLayout;
     }
 
     protected LinearLayout createFooterLayout() {
         LinearLayout footerLayout = new LinearLayout(getContext());
         footerLayout.setOrientation(LinearLayout.VERTICAL);
+        setHorizontalFormPaddingIfSet(footerLayout);
         return footerLayout;
     }
 
@@ -150,7 +191,36 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     protected LinearLayout createFormLayout() {
         LinearLayout formLayout = new LinearLayout(getContext());
         formLayout.setOrientation(LinearLayout.VERTICAL);
+        setFormPaddingIfSet(formLayout);
         return formLayout;
+    }
+
+    /**
+     * Set form padding if defined in layout XML
+     * (formPadding, formPaddingLeft, formPaddingTop, ...)
+     **/
+    protected void setHorizontalFormPaddingIfSet(View view) {
+        if (delegatedFormPaddingSet) {
+            view.setPadding(
+                    delegatedFormPaddingLeft, 0,
+                    delegatedFormPaddingRight, 0
+            );
+        }
+    }
+
+    /**
+     * Set form padding if defined in layout XML
+     * (formPadding, formPaddingLeft, formPaddingTop, ...)
+     **/
+    protected void setFormPaddingIfSet(View view) {
+        if (delegatedFormPaddingSet) {
+            view.setPadding(
+                    delegatedFormPaddingLeft,
+                    delegatedFormPaddingTop,
+                    delegatedFormPaddingRight,
+                    delegatedFormPaddingBottom
+            );
+        }
     }
 
     @Override
