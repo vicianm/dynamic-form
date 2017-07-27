@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <declare-styleable name="DynamicHeaderLayoutParams">
-        <attr name="pinAllowed" format="boolean" />
+    <declare-styleable name="DynamicFormHeaderLayoutAttrs">
         <attr name="onCreateHeader" format="string" />
         <attr name="onCreateFooter" format="string" />
     </declare-styleable>

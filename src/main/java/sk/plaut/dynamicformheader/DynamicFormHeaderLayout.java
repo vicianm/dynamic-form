@@ -62,17 +62,17 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     private void resolveAttributes(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes){
         final TypedArray a = context.obtainStyledAttributes(
                 attrs,
-                R.styleable.DynamicHeaderLayoutParams,
+                R.styleable.DynamicFormHeaderLayoutAttrs,
                 defStyleAttr, defStyleRes);
         try {
             if (context.isRestricted()) {
-                throw new IllegalStateException("The android:onClick attribute cannot be used within a restricted context");
+                throw new IllegalStateException("The customAttribute: onCreateFooter / onCreateHeader cannot be used within a restricted context");
             }
-            final String onCreateHeaderReference = a.getString(R.styleable.DynamicHeaderLayoutParams_onCreateHeader);
+            final String onCreateHeaderReference = a.getString(R.styleable.DynamicFormHeaderLayoutAttrs_onCreateHeader);
             if (onCreateHeaderReference != null) {
                 this.onCreateHeaderMethod = resolveMethod(this, onCreateHeaderReference);
             }
-            final String onCreateFooterReference = a.getString(R.styleable.DynamicHeaderLayoutParams_onCreateFooter);
+            final String onCreateFooterReference = a.getString(R.styleable.DynamicFormHeaderLayoutAttrs_onCreateFooter);
             if (onCreateFooterReference != null) {
                 this.onCreateFooterMethod = resolveMethod(this, onCreateFooterReference);
             }
@@ -206,8 +206,9 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
             boolean pinAllowed = ((LayoutParams) layoutParams).pinAllowed;
             if (pinAllowed) {
                 PinnableViewData headerData = new PinnableViewData(child);
+                View formView = headerData.getFormView();
                 if(this.onCreateHeaderMethod != null){
-                    Object result = this.onCreateHeaderMethod.invoke();
+                    Object result = this.onCreateHeaderMethod.invoke(formView);
                     if(result instanceof  View){
                         headerData.setPinnedViewHeader((View) result);
                     } else {
@@ -215,7 +216,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                     }
                 }
                 if(this.onCreateFooterMethod != null){
-                    Object result = this.onCreateFooterMethod.invoke();
+                    Object result = this.onCreateFooterMethod.invoke(formView);
                     if(result instanceof  View){
                         headerData.setPinnedViewFooter((View)result);
                     } else {
@@ -319,9 +320,9 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         }
 
         private void readCustomParams(Context c, AttributeSet attrs){
-            TypedArray typedArray = c.obtainStyledAttributes(attrs, R.styleable.DynamicHeaderLayoutParams);
+            TypedArray typedArray = c.obtainStyledAttributes(attrs, R.styleable.DynamicFormHeaderLayoutParams);
             try {
-                this.pinAllowed = typedArray.getBoolean(R.styleable.DynamicHeaderLayoutParams_pinAllowed, false);
+                this.pinAllowed = typedArray.getBoolean(R.styleable.DynamicFormHeaderLayoutParams_pinAllowed, false);
             } finally {
                 typedArray.recycle();
             }
@@ -343,7 +344,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
             this.view = view;
         }
 
-        private Object invoke(){
+        private Object invoke(View view){
             try {
                 return method.invoke(context, view);
             } catch (IllegalAccessException e) {
