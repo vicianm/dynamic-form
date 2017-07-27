@@ -34,18 +34,15 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     private Collection<PinnableViewData> pinnableViewData = new LinkedList<>();
 
     public DynamicFormHeaderLayout(Context context) {
-        super(context);
-        initLayout();
+        this(context, null);
     }
 
     public DynamicFormHeaderLayout(Context context, @Nullable AttributeSet attrs) {
-        super(context, attrs);
-        initLayout();
+        this(context, attrs, 0);
     }
 
     public DynamicFormHeaderLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
-        initLayout();
+        this(context, attrs, defStyleAttr, 0);
     }
 
     public DynamicFormHeaderLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
