@@ -211,9 +211,9 @@ public class DynamicHeaderLayout extends LinearLayout implements View.OnScrollCh
         boolean updateHeaders = false;
         for (PinnableViewData data : pinnableViewData) {
             float viewY = data.getFormView().getY();
-            if (scrollY > viewY + data.getFormView().getHeight()) {
+            if (scrollY + headerLayout.getHeight() > viewY + (data.getState() == PinnableViewData.State.PINNED_UP ? data.getPinnedView().getHeight() : 0)) {
                 updateHeaders |= data.update(PinnableViewData.State.PINNED_UP);
-            } else if (scrollY+v.getHeight() < viewY) {
+            } else if (scrollY + v.getHeight() - footerLayout.getHeight() < viewY + (data.getState() == PinnableViewData.State.PINNED_DOWN ? 0 : data.getPinnedView().getHeight())) {
                 updateHeaders |= data.update(PinnableViewData.State.PINNED_DOWN);
             } else {
                 updateHeaders |= data.update(PinnableViewData.State.UNPINNED);
