@@ -20,14 +20,10 @@ public class PinnableViewData {
      */
     private View formView;
 
-    private View pinnedView;
+    private View pinnedViewHeader;
+    private View pinnedViewFooter;
 
     public PinnableViewData(View formView) {
-
-        Button button = new Button(formView.getContext());
-        button.setText(((Button)formView).getText());
-        this.pinnedView = button;
-
         this.formView = formView;
     }
 
@@ -43,8 +39,20 @@ public class PinnableViewData {
         return formView;
     }
 
-    public View getPinnedView() {
-        return pinnedView;
+    public void setPinnedViewHeader(View pinnedViewHeader) {
+        this.pinnedViewHeader = pinnedViewHeader;
+    }
+
+    public void setPinnedViewFooter(View pinnedViewFooter) {
+        this.pinnedViewFooter = pinnedViewFooter;
+    }
+
+    public View getPinnedViewFooter() {
+        return pinnedViewFooter;
+    }
+
+    public View getPinnedViewHeader() {
+        return pinnedViewHeader;
     }
 
     public boolean update(State state) {

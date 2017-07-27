@@ -1,17 +1,22 @@
 package sk.plaut.dynamicformheader;
 
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.res.TypedArray;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.LinkedList;
 
@@ -33,6 +38,9 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
 
     private Collection<PinnableViewData> pinnableViewData = new LinkedList<>();
 
+    private MethodWithContext onCreateHeaderMethod;
+    private MethodWithContext onCreateFooterMethod;
+
     public DynamicFormHeaderLayout(Context context) {
         this(context, null);
     }
@@ -48,6 +56,29 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     public DynamicFormHeaderLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         initLayout();
+        this.resolveAttributes(context, attrs, defStyleAttr, defStyleRes);
+    }
+
+    private void resolveAttributes(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes){
+        final TypedArray a = context.obtainStyledAttributes(
+                attrs,
+                R.styleable.DynamicHeaderLayoutParams,
+                defStyleAttr, defStyleRes);
+        try {
+            if (context.isRestricted()) {
+                throw new IllegalStateException("The android:onClick attribute cannot be used within a restricted context");
+            }
+            final String onCreateHeaderReference = a.getString(R.styleable.DynamicHeaderLayoutParams_onCreateHeader);
+            if (onCreateHeaderReference != null) {
+                this.onCreateHeaderMethod = resolveMethod(this, onCreateHeaderReference);
+            }
+            final String onCreateFooterReference = a.getString(R.styleable.DynamicHeaderLayoutParams_onCreateFooter);
+            if (onCreateFooterReference != null) {
+                this.onCreateFooterMethod = resolveMethod(this, onCreateFooterReference);
+            }
+        } finally {
+            a.recycle();
+        }
     }
 
     @Override
@@ -175,6 +206,22 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
             boolean pinAllowed = ((LayoutParams) layoutParams).pinAllowed;
             if (pinAllowed) {
                 PinnableViewData headerData = new PinnableViewData(child);
+                if(this.onCreateHeaderMethod != null){
+                    Object result = this.onCreateHeaderMethod.invoke();
+                    if(result instanceof  View){
+                        headerData.setPinnedViewHeader((View) result);
+                    } else {
+                        throw new RuntimeException("Method invocation of onCreateHeaderMethod did not return new view");
+                    }
+                }
+                if(this.onCreateFooterMethod != null){
+                    Object result = this.onCreateFooterMethod.invoke();
+                    if(result instanceof  View){
+                        headerData.setPinnedViewFooter((View)result);
+                    } else {
+                        throw new RuntimeException("Method invocation of onCreateFooterMethod did not return new view");
+                    }
+                }
                 pinnableViewData.add(headerData);
             }
         }
@@ -207,22 +254,25 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     }
 
     @Override
+    public void updateViewLayout(View view, ViewGroup.LayoutParams params) {
+        super.updateViewLayout(view, params);
+    }
+
+    @Override
     public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
 
         // Check 'pin allowed' views visibility
         boolean updateHeaders = false;
         for (PinnableViewData data : pinnableViewData) {
             float viewY = data.getFormView().getY();
-            if (scrollY + headerLayout.getHeight() > viewY + (data.getState() == PinnableViewData.State.PINNED_UP ? data.getPinnedView().getHeight() : 0)) {
+            if (scrollY + headerLayout.getHeight() > viewY + (data.getState() == PinnableViewData.State.PINNED_UP ? data.getPinnedViewHeader().getHeight() : 0)) {
                 updateHeaders |= data.update(PinnableViewData.State.PINNED_UP);
-            } else if (scrollY + v.getHeight() - footerLayout.getHeight() < viewY + (data.getState() == PinnableViewData.State.PINNED_DOWN ? 0 : data.getPinnedView().getHeight())) {
+            } else if (scrollY + v.getHeight() - footerLayout.getHeight() < viewY + (data.getState() == PinnableViewData.State.PINNED_DOWN ? 0 : data.getPinnedViewFooter().getHeight())) {
                 updateHeaders |= data.update(PinnableViewData.State.PINNED_DOWN);
             } else {
                 updateHeaders |= data.update(PinnableViewData.State.UNPINNED);
             }
         }
-
-        Log.i("DynamicHeaderLayout", "updateHeaders: " + updateHeaders);
 
         // Update header/footer containers if any change occurred
         if (updateHeaders) {
@@ -230,15 +280,17 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                 if (data.isUpdate()) {
 
                     // Ensure child is removed from parent
-                    headerLayout.removeView(data.getPinnedView());
-                    footerLayout.removeView(data.getPinnedView());
+                    headerLayout.removeView(data.getPinnedViewFooter());
+                    footerLayout.removeView(data.getPinnedViewFooter());
+                    headerLayout.removeView(data.getPinnedViewHeader());
+                    footerLayout.removeView(data.getPinnedViewHeader());
 
                     switch(data.getState()) {
                         case PINNED_UP:
-                            headerLayout.addView(data.getPinnedView());
+                            headerLayout.addView(data.getPinnedViewHeader());
                             break;
                         case PINNED_DOWN:
-                            footerLayout.addView(data.getPinnedView(), 0);
+                            footerLayout.addView(data.getPinnedViewFooter(), 0);
                             break;
                         case UNPINNED:
                             // nothing to do
@@ -278,6 +330,61 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         public boolean isPinAllowed() {
             return pinAllowed;
         }
+    }
+
+    private static class MethodWithContext {
+        private Method method;
+        private Context context;
+        private View view;
+
+        public MethodWithContext(Method method, Context context, View view) {
+            this.method = method;
+            this.context = context;
+            this.view = view;
+        }
+
+        private Object invoke(){
+            try {
+                return method.invoke(context, view);
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException("Could not execute non-public method for customAttribute:" + method.getName(), e);
+            } catch (InvocationTargetException e) {
+                throw new IllegalStateException( "Could not execute method for customAttribure:" + method.getName(), e);
+            }
+        }
+    }
+
+    /**
+     * Copy from {@link View}, DeclaredOnClickListener
+     */
+    private MethodWithContext resolveMethod(@NonNull View hostView, @NonNull String mMethodName) {
+        Context context = hostView.getContext();
+        while (context != null) {
+            try {
+                if (!context.isRestricted()) {
+                    final Method method = context.getClass().getMethod(mMethodName, View.class);
+                    if (method != null) {
+                        return new MethodWithContext(method, context, hostView);
+                    }
+                }
+            } catch (NoSuchMethodException e) {
+                // Failed to find method, keep searching up the hierarchy.
+            }
+
+            if (context instanceof ContextWrapper) {
+                context = ((ContextWrapper) context).getBaseContext();
+            } else {
+                // Can't search up the hierarchy, null out and fail.
+                context = null;
+            }
+        }
+
+        final int id = hostView.getId();
+        final String idText = id == NO_ID ? "" : " with id '"
+                + hostView.getContext().getResources().getResourceEntryName(id) + "'";
+        throw new IllegalStateException("Could not find method " + mMethodName
+                + "(View) in a parent or ancestor Context customAttribute "
+                + "attribute defined on view " + hostView.getClass() + idText);
     }
 
 }
