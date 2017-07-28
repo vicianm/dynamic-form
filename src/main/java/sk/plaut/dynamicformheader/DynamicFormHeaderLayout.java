@@ -3,9 +3,11 @@ package sk.plaut.dynamicformheader;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.res.TypedArray;
+import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -116,6 +118,12 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
             delegatedFormPaddingBottom = delegatedFormPadding;
             delegatedFormPaddingSet = true;
         }
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        this.onScrollChange(formLayoutScrollView, 0, 0, 0, 0);
+        super.onSizeChanged(w, h, oldw, oldh);
     }
 
     @Override
