@@ -262,13 +262,25 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     @Override
     public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
 
+        // calculate current header size and footer size from pinnableViewData,
+        // headerLayout.getHeight cant be used due inconsistent data after addView when swipe is used
+        int headerSizeByData = 0;
+        int footerSizeByData = 0;
+        for (PinnableViewData data : pinnableViewData) {
+            if(data.getState() == PinnableViewData.State.PINNED_UP){
+                headerSizeByData += data.getPinnedViewHeader().getHeight();
+            } else if(data.getState() == PinnableViewData.State.PINNED_DOWN){
+                footerSizeByData += data.getPinnedViewFooter().getHeight();
+            }
+        }
+
         // Check 'pin allowed' views visibility
         boolean updateHeaders = false;
         for (PinnableViewData data : pinnableViewData) {
             float viewY = data.getFormView().getY();
-            if (scrollY + headerLayout.getHeight() > viewY + (data.getState() == PinnableViewData.State.PINNED_UP ? data.getPinnedViewHeader().getHeight() : 0)) {
+            if (scrollY + headerSizeByData > viewY + (data.getState() == PinnableViewData.State.PINNED_UP ? data.getPinnedViewHeader().getHeight() : 0)) {
                 updateHeaders |= data.update(PinnableViewData.State.PINNED_UP);
-            } else if (scrollY + v.getHeight() - footerLayout.getHeight() < viewY + (data.getState() == PinnableViewData.State.PINNED_DOWN ? 0 : data.getPinnedViewFooter().getHeight())) {
+            } else if (scrollY + v.getHeight() - footerSizeByData < viewY + (data.getState() == PinnableViewData.State.PINNED_DOWN ? 0 : data.getPinnedViewFooter().getHeight())) {
                 updateHeaders |= data.update(PinnableViewData.State.PINNED_DOWN);
             } else {
                 updateHeaders |= data.update(PinnableViewData.State.UNPINNED);
