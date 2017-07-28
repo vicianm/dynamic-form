@@ -35,6 +35,8 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     private ScrollView formLayoutScrollView;
     private LinearLayout formLayout;
 
+    private int scrollToSectionMargin = 0;
+
     private boolean delegatedFormPaddingSet = false;
     private int delegatedFormPaddingLeft = -1;
     private int delegatedFormPaddingTop = -1;
@@ -100,6 +102,8 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
             if (onActiveSectionChangedReference != null) {
                 this.onActiveSectionChangedMethod = resolveMethod(this, onActiveSectionChangedReference, List.class, int.class, int.class);
             }
+
+            scrollToSectionMargin = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_scrollToSectionMargin, 0);
 
             resolvePaddingAttributes(a);
 
@@ -386,7 +390,9 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                     headerHeigthAfterScroll += data.getPinnedViewHeader().getHeight();
                 }
                 formLayoutScrollView.smoothScrollTo(0,
-                        (int)formView.getY() - headerHeigthAfterScroll);
+                        (int)formView.getY()
+                                - headerHeigthAfterScroll
+                                - scrollToSectionMargin);
             }
         });
     }
