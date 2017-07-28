@@ -3,11 +3,9 @@ package sk.plaut.dynamicformheader;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.res.TypedArray;
-import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -52,7 +50,8 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
      */
     private List<View> formSectionHeaders;
 
-    private View currentActiveSectionHeader = null;
+    private View activeSectionHeader = null;
+    private int activeSectionHeaderIndex = -1;
 
     private MethodWithContext onCreateHeaderMethod;
     private MethodWithContext onCreateFooterMethod;
@@ -99,7 +98,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
 
             final String onActiveSectionChangedReference = a.getString(R.styleable.DynamicFormHeaderLayoutAttrs_onActiveSectionChanged);
             if (onActiveSectionChangedReference != null) {
-                this.onActiveSectionChangedMethod = resolveMethod(this, onActiveSectionChangedReference, List.class, int.class);
+                this.onActiveSectionChangedMethod = resolveMethod(this, onActiveSectionChangedReference, List.class, int.class, int.class);
             }
 
             resolvePaddingAttributes(a);
@@ -503,9 +502,12 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                     //       is the very first one which is unpinned.
 
                     if (!firstUnpinnedViewEvaluated && data.getState() == PinnableViewData.State.UNPINNED) {
-                        if (currentActiveSectionHeader != data.getFormView()) { // is there a new 'first unpinned view'?
-                            currentActiveSectionHeader = data.getFormView();
-                            onActiveSectionChangedMethod.invoke(formSectionHeaders, i);
+                        if (activeSectionHeader != data.getFormView()) { // is there a new 'first unpinned view'?
+                            int currentIndex = i;
+                            int previousIndex = activeSectionHeaderIndex;
+                            onActiveSectionChangedMethod.invoke(formSectionHeaders, currentIndex, previousIndex);
+                            activeSectionHeader = data.getFormView();
+                            activeSectionHeaderIndex = i;
                         }
                         firstUnpinnedViewEvaluated = true;
                     }
