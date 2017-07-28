@@ -6,19 +6,17 @@ import android.content.res.TypedArray;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * <p>Layout which recognizes <code>pinAllowed</code> attributes
@@ -36,7 +34,13 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     private ScrollView formLayoutScrollView;
     private LinearLayout formLayout;
 
-    private Collection<PinnableViewData> pinnableViewData = new LinkedList<>();
+    private boolean delegatedFormPaddingSet = false;
+    private int delegatedFormPaddingLeft = -1;
+    private int delegatedFormPaddingTop = -1;
+    private int delegatedFormPaddingRight = -1;
+    private int delegatedFormPaddingBottom = -1;
+
+    private List<PinnableViewData> pinnableViewData = new LinkedList<>();
 
     private MethodWithContext onCreateHeaderMethod;
     private MethodWithContext onCreateFooterMethod;
@@ -55,8 +59,8 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
 
     public DynamicFormHeaderLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
-        initLayout();
         this.resolveAttributes(context, attrs, defStyleAttr, defStyleRes);
+        initLayout();
     }
 
     private void resolveAttributes(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes){
@@ -65,19 +69,52 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                 R.styleable.DynamicFormHeaderLayoutAttrs,
                 defStyleAttr, defStyleRes);
         try {
+
             if (context.isRestricted()) {
                 throw new IllegalStateException("The customAttribute: onCreateFooter / onCreateHeader cannot be used within a restricted context");
             }
+
             final String onCreateHeaderReference = a.getString(R.styleable.DynamicFormHeaderLayoutAttrs_onCreateHeader);
             if (onCreateHeaderReference != null) {
                 this.onCreateHeaderMethod = resolveMethod(this, onCreateHeaderReference);
             }
+
             final String onCreateFooterReference = a.getString(R.styleable.DynamicFormHeaderLayoutAttrs_onCreateFooter);
             if (onCreateFooterReference != null) {
                 this.onCreateFooterMethod = resolveMethod(this, onCreateFooterReference);
             }
+
+            resolvePaddingAttributes(a);
+
         } finally {
             a.recycle();
+        }
+    }
+
+    private void resolvePaddingAttributes(TypedArray a) {
+        int delegatedFormPadding = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_formPadding, -1);
+        delegatedFormPaddingLeft = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_formPaddingLeft, -1);
+        delegatedFormPaddingTop = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_formPaddingTop, -1);
+        delegatedFormPaddingRight = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_formPaddingRight, -1);
+        delegatedFormPaddingBottom = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_formPaddingBottom, -1);
+
+        // Check whether padding and formPaddingLeft/Top/Right/Bottom are used exclusively
+        if (delegatedFormPaddingLeft > -1 || delegatedFormPaddingTop > -1 || delegatedFormPaddingRight > -1 || delegatedFormPaddingBottom > -1) {
+            if (delegatedFormPadding > -1) {
+                throw new IllegalStateException("Both 'formPadding' and 'formPaddingLeft/Top/Right/Bottom' cannot be defined simultaneously.");
+            }
+            if (delegatedFormPaddingLeft < 0) delegatedFormPaddingLeft = 0;
+            if (delegatedFormPaddingTop < 0) delegatedFormPaddingTop = 0;
+            if (delegatedFormPaddingRight < 0) delegatedFormPaddingRight = 0;
+            if (delegatedFormPaddingBottom < 0) delegatedFormPaddingBottom = 0;
+            delegatedFormPaddingSet = true;
+        }
+        if (delegatedFormPadding > -1) {
+            delegatedFormPaddingLeft = delegatedFormPadding;
+            delegatedFormPaddingTop = delegatedFormPadding;
+            delegatedFormPaddingRight = delegatedFormPadding;
+            delegatedFormPaddingBottom = delegatedFormPadding;
+            delegatedFormPaddingSet = true;
         }
     }
 
@@ -86,10 +123,38 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         super.addView(child);
     }
 
+    /**
+     * Call this method if you need to further customize the container of form components.
+     * E.g. by adding some additional padding, background color etc.
+     * @return {@link LinearLayout} instance which actually holds
+     * all the form components.
+     */
     public LinearLayout getFormLayout() {
         return formLayout;
     }
 
+    /**
+     * Call this method if you need to further customize the header container.
+     * E.g. by adding some additional padding, background color etc.
+     * @return {@link LinearLayout} used as a container for header views.
+     */
+    public LinearLayout getHeaderLayout() {
+        return headerLayout;
+    }
+
+    /**
+     * Call this method if you need to further customize the footer container.
+     * E.g. by adding some additional padding, background color etc.
+     * @return {@link LinearLayout} used as a container for footer views.
+     */
+    public LinearLayout getFooterLayout() {
+        return footerLayout;
+    }
+
+    /**
+     * @return {@link ScrollView} which holds the form container {@link ScrollView} which wraps the form container.
+     * @see #getFormLayout()
+     */
     public ScrollView getFormLayoutScrollView() {
         return formLayoutScrollView;
     }
@@ -134,12 +199,14 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     protected LinearLayout createHeaderLayout() {
         LinearLayout headerLayout = new LinearLayout(getContext());
         headerLayout.setOrientation(LinearLayout.VERTICAL);
+        setHorizontalFormPaddingIfSet(headerLayout);
         return headerLayout;
     }
 
     protected LinearLayout createFooterLayout() {
         LinearLayout footerLayout = new LinearLayout(getContext());
         footerLayout.setOrientation(LinearLayout.VERTICAL);
+        setHorizontalFormPaddingIfSet(footerLayout);
         return footerLayout;
     }
 
@@ -152,7 +219,36 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     protected LinearLayout createFormLayout() {
         LinearLayout formLayout = new LinearLayout(getContext());
         formLayout.setOrientation(LinearLayout.VERTICAL);
+        setFormPaddingIfSet(formLayout);
         return formLayout;
+    }
+
+    /**
+     * Set form padding if defined in layout XML
+     * (formPadding, formPaddingLeft, formPaddingTop, ...)
+     **/
+    protected void setHorizontalFormPaddingIfSet(View view) {
+        if (delegatedFormPaddingSet) {
+            view.setPadding(
+                    delegatedFormPaddingLeft, 0,
+                    delegatedFormPaddingRight, 0
+            );
+        }
+    }
+
+    /**
+     * Set form padding if defined in layout XML
+     * (formPadding, formPaddingLeft, formPaddingTop, ...)
+     **/
+    protected void setFormPaddingIfSet(View view) {
+        if (delegatedFormPaddingSet) {
+            view.setPadding(
+                    delegatedFormPaddingLeft,
+                    delegatedFormPaddingTop,
+                    delegatedFormPaddingRight,
+                    delegatedFormPaddingBottom
+            );
+        }
     }
 
     @Override
@@ -201,12 +297,16 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
      * @param child
      */
     private void updateHeaderData(View child) {
+
         ViewGroup.LayoutParams layoutParams = child.getLayoutParams();
         if (layoutParams instanceof DynamicFormHeaderLayout.LayoutParams) {
             boolean pinAllowed = ((LayoutParams) layoutParams).pinAllowed;
+
             if (pinAllowed) {
                 PinnableViewData headerData = new PinnableViewData(child);
                 View formView = headerData.getFormView();
+
+                // Get header view instance from callback method
                 if(this.onCreateHeaderMethod != null){
                     Object result = this.onCreateHeaderMethod.invoke(formView);
                     if(result instanceof  View){
@@ -215,6 +315,8 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                         throw new RuntimeException("Method invocation of onCreateHeaderMethod did not return new view");
                     }
                 }
+
+                // Get footer view instance from callback method
                 if(this.onCreateFooterMethod != null){
                     Object result = this.onCreateFooterMethod.invoke(formView);
                     if(result instanceof  View){
@@ -223,9 +325,47 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                         throw new RuntimeException("Method invocation of onCreateFooterMethod did not return new view");
                     }
                 }
+
+                // Configure on click listeners which
+                // scrolls the form in a way that section
+                // under the header/footer will be visible.
+                setHeaderOnClickListener(headerData.getFormView(), headerData.getPinnedViewHeader());
+                setHeaderOnClickListener(headerData.getFormView(), headerData.getPinnedViewFooter());
+
                 pinnableViewData.add(headerData);
             }
         }
+    }
+
+    /**
+     * Sets click listener for <code>pinnedView</code> which scrolls the form
+     * in a way that section under the header/footer will be visible.
+     */
+    protected void setHeaderOnClickListener(final View formView, final View pinnedView) {
+        pinnedView.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                // Calculate header height at time user scrolls the
+                // form in a such way that <code>formView</code> is
+                // the first visible component of the form.
+                // We can rely on the fact that <code>pinnableViewData</code>
+                // are ordered the same way as views are shown in header/footer.
+                int headerHeigthAfterScroll = 0;
+                for (PinnableViewData data : pinnableViewData) {
+
+                    // We are done if we reached the view on which user clicked
+                    boolean done =
+                            pinnedView == data.getPinnedViewHeader() ||
+                            pinnedView == data.getPinnedViewFooter();
+                    if (done) break;
+
+                    headerHeigthAfterScroll += data.getPinnedViewHeader().getHeight();
+                }
+                formLayoutScrollView.smoothScrollTo(0,
+                        (int)formView.getY() - headerHeigthAfterScroll);
+            }
+        });
     }
 
     @Override
