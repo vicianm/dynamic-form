@@ -547,9 +547,9 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
             this.context = context;
         }
 
-        private void invoke(Object... args) {
+        private Object invoke(Object... args) {
             try {
-                method.invoke(context, args);
+                return method.invoke(context, args);
             } catch (IllegalAccessException e) {
                 throw new IllegalStateException("Could not execute non-public method for customAttribute:" + method.getName(), e);
             } catch (InvocationTargetException e) {
