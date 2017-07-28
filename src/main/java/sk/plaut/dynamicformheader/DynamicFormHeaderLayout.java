@@ -123,10 +123,38 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         super.addView(child);
     }
 
+    /**
+     * Call this method if you need to further customize the container of form components.
+     * E.g. by adding some additional padding, background color etc.
+     * @return {@link LinearLayout} instance which actually holds
+     * all the form components.
+     */
     public LinearLayout getFormLayout() {
         return formLayout;
     }
 
+    /**
+     * Call this method if you need to further customize the header container.
+     * E.g. by adding some additional padding, background color etc.
+     * @return {@link LinearLayout} used as a container for header views.
+     */
+    public LinearLayout getHeaderLayout() {
+        return headerLayout;
+    }
+
+    /**
+     * Call this method if you need to further customize the footer container.
+     * E.g. by adding some additional padding, background color etc.
+     * @return {@link LinearLayout} used as a container for footer views.
+     */
+    public LinearLayout getFooterLayout() {
+        return footerLayout;
+    }
+
+    /**
+     * @return {@link ScrollView} which holds the form container {@link ScrollView} which wraps the form container.
+     * @see #getFormLayout()
+     */
     public ScrollView getFormLayoutScrollView() {
         return formLayoutScrollView;
     }
