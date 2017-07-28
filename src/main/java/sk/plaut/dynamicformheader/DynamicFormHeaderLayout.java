@@ -15,6 +15,7 @@ import android.widget.ScrollView;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -42,8 +43,18 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
 
     private List<PinnableViewData> pinnableViewData = new LinkedList<>();
 
+    /**
+     * Immutable list of formSectionHeaders which is passed to
+     * onActiveSectionChanged(...) callback if user defined on in layout XML file.
+     * @see sk.plaut.dynamicformheader.R.styleable#DynamicFormHeaderLayoutAttrs_onActiveSectionChanged
+     */
+    private List<View> formSectionHeaders;
+
+    private View currentActiveSectionHeader = null;
+
     private MethodWithContext onCreateHeaderMethod;
     private MethodWithContext onCreateFooterMethod;
+    private MethodWithContext onActiveSectionChangedMethod;
 
     public DynamicFormHeaderLayout(Context context) {
         this(context, null);
@@ -76,12 +87,17 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
 
             final String onCreateHeaderReference = a.getString(R.styleable.DynamicFormHeaderLayoutAttrs_onCreateHeader);
             if (onCreateHeaderReference != null) {
-                this.onCreateHeaderMethod = resolveMethod(this, onCreateHeaderReference);
+                this.onCreateHeaderMethod = resolveMethod(this, onCreateHeaderReference, View.class);
             }
 
             final String onCreateFooterReference = a.getString(R.styleable.DynamicFormHeaderLayoutAttrs_onCreateFooter);
             if (onCreateFooterReference != null) {
-                this.onCreateFooterMethod = resolveMethod(this, onCreateFooterReference);
+                this.onCreateFooterMethod = resolveMethod(this, onCreateFooterReference, View.class);
+            }
+
+            final String onActiveSectionChangedReference = a.getString(R.styleable.DynamicFormHeaderLayoutAttrs_onActiveSectionChanged);
+            if (onActiveSectionChangedReference != null) {
+                this.onActiveSectionChangedMethod = resolveMethod(this, onActiveSectionChangedReference, List.class, int.class);
             }
 
             resolvePaddingAttributes(a);
@@ -372,6 +388,22 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     protected void onFinishInflate() {
         super.onFinishInflate();
         inflateFinished = true;
+        initFormSectionHeadersList();
+    }
+
+    /**
+     * Called after XML layout is inflated to init unmodifiable
+     * list of section headers which serves as a parameter for
+     * {@link #onActiveSectionChangedMethod} callback.
+     */
+    private void initFormSectionHeadersList() {
+        if (onActiveSectionChangedMethod != null) {
+            List<View> formSectionHeaders = new LinkedList<>();
+            for (PinnableViewData data : pinnableViewData) {
+                formSectionHeaders.add(data.getFormView());
+            }
+            this.formSectionHeaders = Collections.unmodifiableList(formSectionHeaders);
+        }
     }
 
     @Override
@@ -429,7 +461,8 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
 
         if (updateHeaders) {
             boolean firstUnpinnedViewEvaluated = false;
-            for (PinnableViewData data : pinnableViewData) {
+            for (int i = 0; i<pinnableViewData.size(); i++) {
+                PinnableViewData data = pinnableViewData.get(i);
 
                 // Update header/footer containers if any change occurred
 
@@ -452,28 +485,26 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                     }
                 }
 
-                // Call onActiveSectionChanged(...) callback if there
-                // is a new 'active section'.
-                //
-                // Note: Active section of the form is the very first section of
-                //       the form which is not collapsed. Thus header of active section
-                //       is the very first one which is unpinned.
+                if (onActiveSectionChangedMethod != null) {
 
-                if (!firstUnpinnedViewEvaluated && data.getState() == PinnableViewData.State.UNPINNED) {
-                    if (firstUnpinnedView != data.getFormView()) { // is there a new 'first unpinned view'?
-                        firstUnpinnedView = data.getFormView();
+                    // Call onActiveSectionChanged(...) callback if there
+                    // is a new 'active section'.
+                    //
+                    // Note: Active section of the form is the very first section of
+                    //       the form which is not collapsed. Thus header of active section
+                    //       is the very first one which is unpinned.
 
-//                        if (onActiveSectionChangedCallback != null) {
-//                        ...
-//                        }
+                    if (!firstUnpinnedViewEvaluated && data.getState() == PinnableViewData.State.UNPINNED) {
+                        if (currentActiveSectionHeader != data.getFormView()) { // is there a new 'first unpinned view'?
+                            currentActiveSectionHeader = data.getFormView();
+                            onActiveSectionChangedMethod.invoke(formSectionHeaders, i);
+                        }
+                        firstUnpinnedViewEvaluated = true;
                     }
-                    firstUnpinnedViewEvaluated = true;
                 }
             }
         }
     }
-
-    private View firstUnpinnedView = null;
 
     private static class LayoutParams extends LinearLayout.LayoutParams {
 
@@ -507,19 +538,18 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     }
 
     private static class MethodWithContext {
+
         private Method method;
         private Context context;
-        private View view;
 
-        public MethodWithContext(Method method, Context context, View view) {
+        public MethodWithContext(Method method, Context context) {
             this.method = method;
             this.context = context;
-            this.view = view;
         }
 
-        private Object invoke(View view){
+        private void invoke(Object... args) {
             try {
-                return method.invoke(context, view);
+                method.invoke(context, args);
             } catch (IllegalAccessException e) {
                 throw new IllegalStateException("Could not execute non-public method for customAttribute:" + method.getName(), e);
             } catch (InvocationTargetException e) {
@@ -531,14 +561,14 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     /**
      * Copy from {@link View}, DeclaredOnClickListener
      */
-    private MethodWithContext resolveMethod(@NonNull View hostView, @NonNull String mMethodName) {
+    private MethodWithContext resolveMethod(@NonNull View hostView, @NonNull String mMethodName, Class<?>... methodParameterTypes) {
         Context context = hostView.getContext();
         while (context != null) {
             try {
                 if (!context.isRestricted()) {
-                    final Method method = context.getClass().getMethod(mMethodName, View.class);
+                    final Method method = context.getClass().getMethod(mMethodName, methodParameterTypes);
                     if (method != null) {
-                        return new MethodWithContext(method, context, hostView);
+                        return new MethodWithContext(method, context);
                     }
                 }
             } catch (NoSuchMethodException e) {

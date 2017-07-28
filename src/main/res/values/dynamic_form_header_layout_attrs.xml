@@ -3,6 +3,7 @@
     <declare-styleable name="DynamicFormHeaderLayoutAttrs">
         <attr name="onCreateHeader" format="string" />
         <attr name="onCreateFooter" format="string" />
+        <attr name="onActiveSectionChanged" format="string" />
         <attr name="formPadding" format="dimension" />
         <attr name="formPaddingLeft" format="dimension" />
         <attr name="formPaddingTop" format="dimension" />
