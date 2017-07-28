@@ -435,16 +435,17 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
             }
         }
 
-        // Update header/footer containers if any change occurred
         if (updateHeaders) {
+            boolean firstUnpinnedViewEvaluated = false;
             for (PinnableViewData data : pinnableViewData) {
+
+                // Update header/footer containers if any change occurred
+
                 if (data.isUpdate()) {
 
                     // Ensure child is removed from parent
-                    headerLayout.removeView(data.getPinnedViewFooter());
-                    footerLayout.removeView(data.getPinnedViewFooter());
                     headerLayout.removeView(data.getPinnedViewHeader());
-                    footerLayout.removeView(data.getPinnedViewHeader());
+                    footerLayout.removeView(data.getPinnedViewFooter());
 
                     switch(data.getState()) {
                         case PINNED_UP:
@@ -454,13 +455,33 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                             footerLayout.addView(data.getPinnedViewFooter(), 0);
                             break;
                         case UNPINNED:
-                            // nothing to do
+                            // nothing to do with header/footer container
                             break;
                     }
+                }
+
+                // Call onActiveSectionChanged(...) callback if there
+                // is a new 'active section'.
+                //
+                // Note: Active section of the form is the very first section of
+                //       the form which is not collapsed. Thus header of active section
+                //       is the very first one which is unpinned.
+
+                if (!firstUnpinnedViewEvaluated && data.getState() == PinnableViewData.State.UNPINNED) {
+                    if (firstUnpinnedView != data.getFormView()) { // is there a new 'first unpinned view'?
+                        firstUnpinnedView = data.getFormView();
+
+//                        if (onActiveSectionChangedCallback != null) {
+//                        ...
+//                        }
+                    }
+                    firstUnpinnedViewEvaluated = true;
                 }
             }
         }
     }
+
+    private View firstUnpinnedView = null;
 
     private static class LayoutParams extends LinearLayout.LayoutParams {
 
