@@ -452,9 +452,9 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         int headerSizeByData = 0;
         int footerSizeByData = 0;
         for (PinnableViewData data : pinnableViewData) {
-            if(data.getState() == PinnableViewData.State.PINNED_UP){
+            if (data.getState() == PinnableViewData.State.PINNED_UP) {
                 headerSizeByData += data.getPinnedViewHeader().getHeight();
-            } else if(data.getState() == PinnableViewData.State.PINNED_DOWN){
+            } else if (data.getState() == PinnableViewData.State.PINNED_DOWN) {
                 footerSizeByData += data.getPinnedViewFooter().getHeight();
             }
         }
@@ -465,7 +465,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
             float viewY = data.getFormView().getY();
             if (scrollY + headerSizeByData > viewY + (data.getState() == PinnableViewData.State.PINNED_UP ? data.getPinnedViewHeader().getHeight() : 0)) {
                 updateHeaders |= data.update(PinnableViewData.State.PINNED_UP);
-            } else if (scrollY + v.getHeight() - footerSizeByData < viewY + (data.getState() == PinnableViewData.State.PINNED_DOWN ? 0 : data.getPinnedViewFooter().getHeight())) {
+            } else if (scrollY + v.getHeight() - footerSizeByData < viewY + (data.getState() == PinnableViewData.State.PINNED_DOWN ? 0 : data.getFormView().getHeight())) {
                 updateHeaders |= data.update(PinnableViewData.State.PINNED_DOWN);
             } else {
                 updateHeaders |= data.update(PinnableViewData.State.UNPINNED);
