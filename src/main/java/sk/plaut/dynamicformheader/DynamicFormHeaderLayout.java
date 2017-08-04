@@ -9,6 +9,7 @@ import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -75,6 +76,57 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         super(context, attrs, defStyleAttr, defStyleRes);
         this.resolveAttributes(context, attrs, defStyleAttr, defStyleRes);
         initLayout();
+
+        getViewTreeObserver().addOnGlobalFocusChangeListener(new ViewTreeObserver.OnGlobalFocusChangeListener() {
+            @Override
+            public void onGlobalFocusChanged(View oldFocus, View newFocus) {
+
+                PinnableViewData activeSectionHeaderData = null;
+
+                // Traverse view hierarchy down to 'formLayout'
+                // to find View which is a direct child of 'formLayout'.
+                // This way we detect if 'newFocus' is part of 'formLayout'
+                // and also we detect a View/ViewGroup instance to which 'newFocus'
+                // belongs to.
+                View child = newFocus;
+                for (;;) {
+                    if (child == null || child.getParent() == getFormLayout()) {
+                        break;
+                    }
+                    child = (View)child.getParent();
+                }
+
+                if (child != null && child.getParent() == getFormLayout()) {
+                    // At this point
+                    // - 'newFocus' is from form layout
+                    // - 'child' is direct child of 'formLayout'
+
+                    // Detect section to which 'child' belongs by traversing
+                    // 'formLayout' upwards ('formLayout' is LinearLayout therefore
+                    // we can traverse its children by index until child with
+                    // 'pinAllowed' attribute is found).
+
+                    View sectionFormView = null;
+                    int viewIndex = getFormLayout().indexOfChild(child);
+                    for (int i = viewIndex; i>0; i--) {
+                        child = getFormLayout().getChildAt(i);
+                        LayoutParams layoutParams = (LayoutParams) child.getLayoutParams();
+                        if (layoutParams.isPinAllowed()) {
+                            sectionFormView = child;
+                            break;
+                        }
+                    }
+
+                    if (sectionFormView != null) {
+                        for (PinnableViewData sectionData : pinnableViewData) {
+                            if (sectionData.getFormView() == sectionFormView) {
+                                scrollToSection(sectionData);
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
     private void resolveAttributes(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes){
@@ -330,14 +382,14 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
             boolean pinAllowed = ((LayoutParams) layoutParams).pinAllowed;
 
             if (pinAllowed) {
-                PinnableViewData headerData = new PinnableViewData(child);
-                View formView = headerData.getFormView();
+                PinnableViewData sectionData = new PinnableViewData(child);
+                View formView = sectionData.getFormView();
 
                 // Get header view instance from callback method
                 if(this.onCreateHeaderMethod != null){
                     Object result = this.onCreateHeaderMethod.invoke(formView);
                     if(result instanceof  View){
-                        headerData.setPinnedViewHeader((View) result);
+                        sectionData.setPinnedViewHeader((View) result);
                     } else {
                         throw new RuntimeException("Method invocation of onCreateHeaderMethod did not return new view");
                     }
@@ -347,7 +399,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                 if(this.onCreateFooterMethod != null){
                     Object result = this.onCreateFooterMethod.invoke(formView);
                     if(result instanceof  View){
-                        headerData.setPinnedViewFooter((View)result);
+                        sectionData.setPinnedViewFooter((View)result);
                     } else {
                         throw new RuntimeException("Method invocation of onCreateFooterMethod did not return new view");
                     }
@@ -356,10 +408,10 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                 // Configure on click listeners which
                 // scrolls the form in a way that section
                 // under the header/footer will be visible.
-                setHeaderOnClickListener(headerData.getFormView(), headerData.getPinnedViewHeader());
-                setHeaderOnClickListener(headerData.getFormView(), headerData.getPinnedViewFooter());
+                setHeaderOnClickListener(sectionData.getPinnedViewHeader(), sectionData);
+                setHeaderOnClickListener(sectionData.getPinnedViewFooter(), sectionData);
 
-                pinnableViewData.add(headerData);
+                pinnableViewData.add(sectionData);
             }
         }
     }
@@ -368,33 +420,31 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
      * Sets click listener for <code>pinnedView</code> which scrolls the form
      * in a way that section under the header/footer will be visible.
      */
-    protected void setHeaderOnClickListener(final View formView, final View pinnedView) {
-        pinnedView.setOnClickListener(new OnClickListener() {
+    protected void setHeaderOnClickListener(View sectionHeader, final PinnableViewData sectionData) {
+        sectionHeader.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                // Calculate header height at time user scrolls the
-                // form in a such way that <code>formView</code> is
-                // the first visible component of the form.
-                // We can rely on the fact that <code>pinnableViewData</code>
-                // are ordered the same way as views are shown in header/footer.
-                int headerHeigthAfterScroll = 0;
-                for (PinnableViewData data : pinnableViewData) {
-
-                    // We are done if we reached the view on which user clicked
-                    boolean done =
-                            pinnedView == data.getPinnedViewHeader() ||
-                            pinnedView == data.getPinnedViewFooter();
-                    if (done) break;
-
-                    headerHeigthAfterScroll += data.getPinnedViewHeader().getHeight();
-                }
-                formLayoutScrollView.smoothScrollTo(0,
-                        (int)formView.getY()
-                                - headerHeigthAfterScroll
-                                - scrollToSectionMargin);
+                scrollToSection(sectionData);
             }
         });
+    }
+
+    private void scrollToSection(PinnableViewData sectionData) {
+        // Calculate header height at time user scrolls the
+        // form in a such way that <code>formView</code> is
+        // the first visible component of the form.
+        // We can rely on the fact that <code>pinnableViewData</code>
+        // are ordered the same way as views are shown in header/footer.
+        int headerHeigthAfterScroll = 0;
+        for (PinnableViewData data : pinnableViewData) {
+            // We are done if we reached the view on which user clicked
+            if (data == sectionData) break;
+            headerHeigthAfterScroll += data.getPinnedViewHeader().getHeight();
+        }
+        formLayoutScrollView.smoothScrollTo(0,
+                (int)sectionData.getFormView().getY()
+                        - headerHeigthAfterScroll
+                        - scrollToSectionMargin);
     }
 
     @Override
