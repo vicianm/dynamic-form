@@ -53,8 +53,8 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
      */
     private List<View> formSectionHeaders;
 
-    private View activeSectionHeader = null;
-    private int activeSectionHeaderIndex = -1;
+    private PinnableViewData activeSection = null;
+    private int activeSectionIndex = -1;
 
     private MethodWithContext onCreateHeaderMethod;
     private MethodWithContext onCreateFooterMethod;
@@ -158,17 +158,6 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
             delegatedFormPaddingBottom = delegatedFormPadding;
             delegatedFormPaddingSet = true;
         }
-    }
-
-    @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        this.onScrollChange(formLayoutScrollView, 0, 0, 0, 0);
-        super.onSizeChanged(w, h, oldw, oldh);
-    }
-
-    @Override
-    public void addView(View child) {
-        super.addView(child);
     }
 
     /**
@@ -494,22 +483,22 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         if (updateHeaders) {
             boolean firstUnpinnedViewEvaluated = false;
             for (int i = 0; i<pinnableViewData.size(); i++) {
-                PinnableViewData data = pinnableViewData.get(i);
+                PinnableViewData section = pinnableViewData.get(i);
 
                 // Update header/footer containers if any change occurred
 
-                if (data.isUpdate()) {
+                if (section.isUpdate()) {
 
                     // Ensure child is removed from parent
-                    headerLayout.removeView(data.getPinnedViewHeader());
-                    footerLayout.removeView(data.getPinnedViewFooter());
+                    headerLayout.removeView(section.getPinnedViewHeader());
+                    footerLayout.removeView(section.getPinnedViewFooter());
 
-                    switch(data.getState()) {
+                    switch(section.getState()) {
                         case PINNED_UP:
-                            headerLayout.addView(data.getPinnedViewHeader());
+                            headerLayout.addView(section.getPinnedViewHeader());
                             break;
                         case PINNED_DOWN:
-                            footerLayout.addView(data.getPinnedViewFooter(), 0);
+                            footerLayout.addView(section.getPinnedViewFooter(), 0);
                             break;
                         case UNPINNED:
                             // nothing to do with header/footer container
@@ -526,19 +515,23 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                     //       the form which is not collapsed. Thus header of active section
                     //       is the very first one which is unpinned.
 
-                    if (!firstUnpinnedViewEvaluated && data.getState() == PinnableViewData.State.UNPINNED) {
-                        if (activeSectionHeader != data.getFormView()) { // is there a new 'first unpinned view'?
-                            int currentIndex = i;
-                            int previousIndex = activeSectionHeaderIndex;
-                            onActiveSectionChangedMethod.invoke(formSectionHeaders, currentIndex, previousIndex);
-                            activeSectionHeader = data.getFormView();
-                            activeSectionHeaderIndex = i;
+                    if (!firstUnpinnedViewEvaluated && section.getState() == PinnableViewData.State.UNPINNED) {
+                        if (activeSection != section) { // is there a new 'first unpinned view'?
+                            setActiveSection(section, i);
                         }
                         firstUnpinnedViewEvaluated = true;
                     }
                 }
             }
         }
+    }
+
+    private void setActiveSection(PinnableViewData section, int sectionIndex) {
+        int newIndex = sectionIndex;
+        int previousIndex = activeSectionIndex;
+        onActiveSectionChangedMethod.invoke(formSectionHeaders, newIndex, previousIndex);
+        activeSection = section;
+        activeSectionIndex = sectionIndex;
     }
 
     private static class LayoutParams extends LinearLayout.LayoutParams {
