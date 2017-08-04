@@ -526,6 +526,13 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         }
     }
 
+    /**
+     * Marks the provided 'section' as active and calls
+     * <code>onActiveSectionChanged()</code> callback method
+     * registered/specified in layout XML file.
+     * @param section Section to be set active
+     * @param sectionIndex Index of provided section in {@link #pinnableViewData} list
+     */
     private void setActiveSection(PinnableViewData section, int sectionIndex) {
         int newIndex = sectionIndex;
         int previousIndex = activeSectionIndex;
