@@ -27,7 +27,7 @@ import java.util.List;
  * <p>View with <code>pinAllowed="true"</code> will be pinned to
  * footer or header of the form is it is no longer visible.</p>
  */
-public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScrollChangeListener {
+public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScrollChangeListener, ViewTreeObserver.OnGlobalFocusChangeListener {
 
     private boolean inflateFinished = false;
 
@@ -77,56 +77,25 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         this.resolveAttributes(context, attrs, defStyleAttr, defStyleRes);
         initLayout();
 
-        getViewTreeObserver().addOnGlobalFocusChangeListener(new ViewTreeObserver.OnGlobalFocusChangeListener() {
-            @Override
-            public void onGlobalFocusChanged(View oldFocus, View newFocus) {
+    }
 
-                PinnableViewData activeSectionHeaderData = null;
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
 
-                // Traverse view hierarchy down to 'formLayout'
-                // to find View which is a direct child of 'formLayout'.
-                // This way we detect if 'newFocus' is part of 'formLayout'
-                // and also we detect a View/ViewGroup instance to which 'newFocus'
-                // belongs to.
-                View child = newFocus;
-                for (;;) {
-                    if (child == null || child.getParent() == getFormLayout()) {
-                        break;
-                    }
-                    child = (View)child.getParent();
-                }
+        // We no longer need to focus for focus changes.
+        // See #onGlobalFocusChanged(oldFocus, newFocus)
+        getViewTreeObserver().removeOnGlobalFocusChangeListener(this);
+    }
 
-                if (child != null && child.getParent() == getFormLayout()) {
-                    // At this point
-                    // - 'newFocus' is from form layout
-                    // - 'child' is direct child of 'formLayout'
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
 
-                    // Detect section to which 'child' belongs by traversing
-                    // 'formLayout' upwards ('formLayout' is LinearLayout therefore
-                    // we can traverse its children by index until child with
-                    // 'pinAllowed' attribute is found).
-
-                    View sectionFormView = null;
-                    int viewIndex = getFormLayout().indexOfChild(child);
-                    for (int i = viewIndex; i>0; i--) {
-                        child = getFormLayout().getChildAt(i);
-                        LayoutParams layoutParams = (LayoutParams) child.getLayoutParams();
-                        if (layoutParams.isPinAllowed()) {
-                            sectionFormView = child;
-                            break;
-                        }
-                    }
-
-                    if (sectionFormView != null) {
-                        for (PinnableViewData sectionData : pinnableViewData) {
-                            if (sectionData.getFormView() == sectionFormView) {
-                                scrollToSection(sectionData);
-                            }
-                        }
-                    }
-                }
-            }
-        });
+        // Start listening for global focus changes. This
+        // way we always keep track of currently active form section.
+        // See #onGlobalFocusChanged(oldFocus, newFocus)
+        getViewTreeObserver().addOnGlobalFocusChangeListener(this);
     }
 
     private void resolveAttributes(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes){
@@ -655,6 +624,55 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         throw new IllegalStateException("Could not find method " + mMethodName
                 + "(View) in a parent or ancestor Context customAttribute "
                 + "attribute defined on view " + hostView.getClass() + idText);
+    }
+
+    @Override
+    public void onGlobalFocusChanged(View oldFocus, View newFocus) {
+
+        PinnableViewData activeSectionHeaderData = null;
+
+        // Traverse view hierarchy down to 'formLayout'
+        // to find View which is a direct child of 'formLayout'.
+        // This way we detect if 'newFocus' is part of 'formLayout'
+        // and also we detect a View/ViewGroup instance to which 'newFocus'
+        // belongs to.
+        View child = newFocus;
+        for (;;) {
+            if (child == null || child.getParent() == getFormLayout()) {
+                break;
+            }
+            child = (View)child.getParent();
+        }
+
+        if (child != null && child.getParent() == getFormLayout()) {
+            // At this point
+            // - 'newFocus' is from form layout
+            // - 'child' is direct child of 'formLayout'
+
+            // Detect section to which 'child' belongs by traversing
+            // 'formLayout' upwards ('formLayout' is LinearLayout therefore
+            // we can traverse its children by index until child with
+            // 'pinAllowed' attribute is found).
+
+            View sectionFormView = null;
+            int viewIndex = getFormLayout().indexOfChild(child);
+            for (int i = viewIndex; i>0; i--) {
+                child = getFormLayout().getChildAt(i);
+                LayoutParams layoutParams = (LayoutParams) child.getLayoutParams();
+                if (layoutParams.isPinAllowed()) {
+                    sectionFormView = child;
+                    break;
+                }
+            }
+
+            if (sectionFormView != null) {
+                for (PinnableViewData sectionData : pinnableViewData) {
+                    if (sectionData.getFormView() == sectionFormView) {
+                        scrollToSection(sectionData);
+                    }
+                }
+            }
+        }
     }
 
 }
