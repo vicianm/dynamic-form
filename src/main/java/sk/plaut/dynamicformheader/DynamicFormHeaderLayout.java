@@ -393,12 +393,13 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         });
     }
 
-    private void scrollToSection(PinnableViewData sectionData) {
+    private boolean scrollToSection(PinnableViewData sectionData) {
+
         // Calculate header height at time user scrolls the
         // form in a such way that <code>formView</code> is
         // the first visible component of the form.
         // We can rely on the fact that <code>pinnableViewData</code>
-        // are ordered the same way as views are shown in header/footer.
+        // are ordered the same way as views are shown in the header/footer.
         int headerHeigthAfterScroll = 0;
         for (PinnableViewData data : pinnableViewData) {
             // We are done if we reached the view on which user clicked
@@ -406,10 +407,39 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
             headerHeigthAfterScroll += data.getPinnedViewHeader().getHeight();
         }
 
-        implicitScrollToY = (int)sectionData.getFormView().getY()
-                        - headerHeigthAfterScroll
-                        - scrollToSectionMargin;
-        formLayoutScrollView.smoothScrollTo(0, implicitScrollToY);
+        // Location where we should first
+        // scroll the form in order to make the section active
+        // (Y value of section header)
+        int sectionY =
+                (int)sectionData.getFormView().getY()
+                - headerHeigthAfterScroll
+                - scrollToSectionMargin;
+
+        // First check if any scroll is needed or possible.
+        // We might already be scrolled at given position or
+        // no scroll is posible (we are at the very top/bottom).
+        int currentScrollY = getFormLayoutScrollView().getScrollY();
+        if (sectionY > currentScrollY)
+        {   // should scroll down
+            boolean alreadyScrolledToBottom = currentScrollY >= getMaxScrollY();
+            if (alreadyScrolledToBottom) {
+                return false;
+            }
+        } else if (sectionY < currentScrollY)
+        {   // should scroll up
+            boolean alreadyScrolledToTop = currentScrollY <= getMinScrollY();
+            if (alreadyScrolledToTop) {
+                return false;
+            }
+        } else {
+            // no scroll needed, position is already OK
+            return false;
+        }
+
+        // Some scroll is needed before making the section active
+        this.implicitScrollToY = sectionY;
+        this.formLayoutScrollView.smoothScrollTo(0, implicitScrollToY);
+        return true;
     }
 
     @Override
@@ -544,10 +574,13 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         implicitScrollToY = -1;
     }
 
+    /**
+     * @return <code>true</code> if
+     * the scroll is caused implicitly by user clicking
+     * on header or by view (section) focus change.
+     * Scroll did not occur because user explicitly scrolled the ScrollView.
+     */
     private boolean isScrollImplicit() {
-        // The scroll is not caused implicitly by user clicking
-        // on header or by focus change. Scroll occurred
-        // because user explicitly scrolled the ScrollView.
         return activeSectionAfterScroll != null;
     }
 
@@ -575,7 +608,11 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
 
     private void setActiveSectionAfterScroll(PinnableViewData section) {
         this.activeSectionAfterScroll = section;
-        scrollToSection(activeSectionAfterScroll);
+        boolean scrollTriggered = scrollToSection(section);
+        if (!scrollTriggered) {
+            resetImplicitScrollParams();
+            setActiveSection(section);
+        }
     }
 
     /**
