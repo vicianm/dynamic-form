@@ -722,7 +722,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
 
             View sectionFormView = null;
             int viewIndex = getFormLayout().indexOfChild(child);
-            for (int i = viewIndex; i>0; i--) {
+            for (int i = viewIndex-1; i>=0; i--) {
                 child = getFormLayout().getChildAt(i);
                 LayoutParams layoutParams = (LayoutParams) child.getLayoutParams();
                 if (layoutParams.isPinAllowed()) {
