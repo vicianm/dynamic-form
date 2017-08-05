@@ -37,6 +37,10 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     private LinearLayout formLayout;
 
     private int scrollToSectionMargin = 0;
+    private int implicitScrollToY = -1;
+
+    private int previousScrollY = -1;
+    private int previousScrollX = -1;
 
     private boolean delegatedFormPaddingSet = false;
     private int delegatedFormPaddingLeft = -1;
@@ -53,6 +57,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
      */
     private List<View> formSectionHeaders;
 
+    private PinnableViewData activeSectionAfterScroll = null;
     private PinnableViewData activeSection = null;
     private int activeSectionIndex = -1;
 
@@ -330,7 +335,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
 
     /**
      * Adds <code>child</code> to header data if child's
-     * <code>pinAllowed</code> attribute is set.
+     * <code>pinAllowed</code> attribute is set <code>true</code>.
      * @param child
      */
     private void updateHeaderData(View child) {
@@ -367,6 +372,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                 // scrolls the form in a way that section
                 // under the header/footer will be visible.
                 setHeaderOnClickListener(sectionData.getPinnedViewHeader(), sectionData);
+                setHeaderOnClickListener(sectionData.getFormView(), sectionData);
                 setHeaderOnClickListener(sectionData.getPinnedViewFooter(), sectionData);
 
                 pinnableViewData.add(sectionData);
@@ -382,7 +388,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         sectionHeader.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                scrollToSection(sectionData);
+                setActiveSectionAfterScroll(sectionData);
             }
         });
     }
@@ -399,10 +405,11 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
             if (data == sectionData) break;
             headerHeigthAfterScroll += data.getPinnedViewHeader().getHeight();
         }
-        formLayoutScrollView.smoothScrollTo(0,
-                (int)sectionData.getFormView().getY()
+
+        implicitScrollToY = (int)sectionData.getFormView().getY()
                         - headerHeigthAfterScroll
-                        - scrollToSectionMargin);
+                        - scrollToSectionMargin;
+        formLayoutScrollView.smoothScrollTo(0, implicitScrollToY);
     }
 
     @Override
@@ -455,6 +462,15 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     @Override
     public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
 
+        // We encountered a case that this method had been
+        // called multiple times with the same attributes.
+        // Skip any duplicate call.
+        if (scrollX == previousScrollX && scrollY == previousScrollY) {
+            return;
+        }
+        previousScrollX = scrollX;
+        previousScrollY = scrollY;
+
         // calculate current header size and footer size from pinnableViewData,
         // headerLayout.getHeight cant be used due inconsistent data after addView when swipe is used
         int headerSizeByData = 0;
@@ -481,8 +497,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         }
 
         if (updateHeaders) {
-            boolean firstUnpinnedViewEvaluated = false;
-            for (int i = 0; i<pinnableViewData.size(); i++) {
+            for (int i = 0; i < pinnableViewData.size(); i++) {
                 PinnableViewData section = pinnableViewData.get(i);
 
                 // Update header/footer containers if any change occurred
@@ -493,7 +508,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                     headerLayout.removeView(section.getPinnedViewHeader());
                     footerLayout.removeView(section.getPinnedViewFooter());
 
-                    switch(section.getState()) {
+                    switch (section.getState()) {
                         case PINNED_UP:
                             headerLayout.addView(section.getPinnedViewHeader());
                             break;
@@ -505,40 +520,91 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                             break;
                     }
                 }
+            }
+        }
 
-                if (onActiveSectionChangedMethod != null) {
-
-                    // Call onActiveSectionChanged(...) callback if there
-                    // is a new 'active section'.
-                    //
-                    // Note: Active section of the form is the very first section of
-                    //       the form which is not collapsed. Thus header of active section
-                    //       is the very first one which is unpinned.
-
-                    if (!firstUnpinnedViewEvaluated && section.getState() == PinnableViewData.State.UNPINNED) {
-                        if (activeSection != section) { // is there a new 'first unpinned view'?
-                            setActiveSection(section, i);
-                        }
-                        firstUnpinnedViewEvaluated = true;
-                    }
+        for (PinnableViewData section : pinnableViewData) {
+            if (onActiveSectionChangedMethod != null) {
+                if (isScrollImplicit() && isImplicitScrollFinished(scrollY, oldScrollY)) {
+                    setActiveSection(activeSectionAfterScroll);
+                    resetImplicitScrollParams();
+                    break;
+                } else if (!isScrollImplicit() &&
+                        section.getState() == PinnableViewData.State.UNPINNED) {
+                    setActiveSection(section); // This calls onActiveSectionChanged(...) callback
+                    break;
                 }
+
             }
         }
     }
 
+    private void resetImplicitScrollParams() {
+        activeSectionAfterScroll = null;
+        implicitScrollToY = -1;
+    }
+
+    private boolean isScrollImplicit() {
+        // The scroll is not caused implicitly by user clicking
+        // on header or by focus change. Scroll occurred
+        // because user explicitly scrolled the ScrollView.
+        return activeSectionAfterScroll != null;
+    }
+
+    private boolean isImplicitScrollFinished(int scrollY, int oldScrollY) {
+        if (scrollY < oldScrollY) {
+            // scrolling up
+            return
+                scrollY <= getMinScrollY() ||
+                scrollY == implicitScrollToY;
+        } else {
+            // scrolling down
+            return
+                scrollY >= getMaxScrollY() ||
+                scrollY == implicitScrollToY;
+        }
+    }
+
+    private int getMinScrollY() {
+        return 0;
+    }
+
+    private int getMaxScrollY() {
+        return getFormLayout().getHeight() - getFormLayoutScrollView().getHeight();
+    }
+
+    private void setActiveSectionAfterScroll(PinnableViewData section) {
+        this.activeSectionAfterScroll = section;
+        scrollToSection(activeSectionAfterScroll);
+    }
+
     /**
-     * Marks the provided 'section' as active and calls
+     * <p>
+     * Marks the provided <code>section</code> as active and calls
      * <code>onActiveSectionChanged()</code> callback method
      * registered/specified in layout XML file.
+     * </p><p>
+     * Does nothing if provided <code>section</code> is already active
+     * (see {@link #isSectionActive(PinnableViewData)}).
+     * </p>
      * @param section Section to be set active
-     * @param sectionIndex Index of provided section in {@link #pinnableViewData} list
      */
-    private void setActiveSection(PinnableViewData section, int sectionIndex) {
-        int newIndex = sectionIndex;
+    private void setActiveSection(PinnableViewData section) {
+
+        // Ignore if section is already active
+        if (isSectionActive(section)) return;
+
+        int newIndex = pinnableViewData.indexOf(section);
         int previousIndex = activeSectionIndex;
-        onActiveSectionChangedMethod.invoke(formSectionHeaders, newIndex, previousIndex);
+
         activeSection = section;
-        activeSectionIndex = sectionIndex;
+        activeSectionIndex = newIndex;
+
+        onActiveSectionChangedMethod.invoke(formSectionHeaders, newIndex, previousIndex);
+    }
+
+    private boolean isSectionActive(PinnableViewData section) {
+        return activeSection == section;
     }
 
     private static class LayoutParams extends LinearLayout.LayoutParams {
@@ -668,7 +734,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
             if (sectionFormView != null) {
                 for (PinnableViewData sectionData : pinnableViewData) {
                     if (sectionData.getFormView() == sectionFormView) {
-                        scrollToSection(sectionData);
+                        setActiveSectionAfterScroll(sectionData);
                     }
                 }
             }
