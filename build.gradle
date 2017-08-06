@@ -1,5 +1,29 @@
 apply plugin: 'com.android.library'
 
+ext {
+    bintrayRepo = 'maven'
+    bintrayName = 'dynamic-form-header'
+
+    publishedGroupId = 'org.github.vicianm'
+    libraryName = 'dynamic-form-header'
+    artifact = 'dynamic-form-header'
+
+    libraryDescription = 'Android library with layout (DynamicFormHeaderLayout) to emulate floating headers and footers of large structured forms.'
+
+    siteUrl = 'https://github.com/vicianm/dynamic-form-header'
+    gitUrl = 'https://github.com/vicianm/dynamic-form-header.git'
+
+    libraryVersion = '0.1'
+
+    developerId = 'vicianm'
+    developerName = 'Michal Vician'
+    developerEmail = 'vicianm@gmail.com'
+
+    licenseName = 'The Apache Software License, Version 2.0'
+    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    allLicenses = ["Apache-2.0"]
+}
+
 android {
     compileSdkVersion 25
     buildToolsVersion "25.0.2"
@@ -30,3 +54,6 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.3.1'
     testCompile 'junit:junit:4.12'
 }
+
+apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/installv1.gradle'
+apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/bintrayv1.gradle'
