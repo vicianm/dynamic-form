@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <declare-styleable name="DynamicFormHeaderLayoutAttrs">
+    <declare-styleable name="DynamicFormLayoutAttrs">
         <attr name="onCreateHeader" format="string" />
         <attr name="onCreateFooter" format="string" />
         <attr name="onActiveSectionChanged" format="string" />

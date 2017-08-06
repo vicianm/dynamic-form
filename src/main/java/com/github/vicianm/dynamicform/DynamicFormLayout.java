@@ -1,4 +1,4 @@
-package sk.plaut.dynamicformheader;
+package com.github.vicianm.dynamicform;
 
 import android.content.Context;
 import android.content.ContextWrapper;
@@ -21,13 +21,13 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * <p>Layout which recognizes <code>pinAllowed</code> attributes
+ * <p>Layout which recognizes <code>sectionHeader</code> attributes
  * in views defined in layout XML file.</p>
  *
- * <p>View with <code>pinAllowed="true"</code> will be pinned to
+ * <p>View with <code>sectionHeader="true"</code> will be pinned to
  * footer or header of the form is it is no longer visible.</p>
  */
-public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScrollChangeListener, ViewTreeObserver.OnGlobalFocusChangeListener {
+public class DynamicFormLayout extends LinearLayout implements View.OnScrollChangeListener, ViewTreeObserver.OnGlobalFocusChangeListener {
 
     private boolean inflateFinished = false;
 
@@ -48,12 +48,12 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     private int delegatedFormPaddingRight = -1;
     private int delegatedFormPaddingBottom = -1;
 
-    private List<SectionData> pinnableViewData = new LinkedList<>();
+    private List<SectionData> sectionsData = new LinkedList<>();
 
     /**
      * Immutable list of formSectionHeaders which is passed to
      * onActiveSectionChanged(...) callback if user defined on in layout XML file.
-     * @see sk.plaut.dynamicformheader.R.styleable#DynamicFormHeaderLayoutAttrs_onActiveSectionChanged
+     * @see com.github.vicianm.dynamicform.R.styleable#DynamicFormLayoutAttrs_onActiveSectionChanged
      */
     private List<View> formSectionHeaders;
 
@@ -65,19 +65,19 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     private MethodWithContext onCreateFooterMethod;
     private MethodWithContext onActiveSectionChangedMethod;
 
-    public DynamicFormHeaderLayout(Context context) {
+    public DynamicFormLayout(Context context) {
         this(context, null);
     }
 
-    public DynamicFormHeaderLayout(Context context, @Nullable AttributeSet attrs) {
+    public DynamicFormLayout(Context context, @Nullable AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public DynamicFormHeaderLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public DynamicFormLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         this(context, attrs, defStyleAttr, 0);
     }
 
-    public DynamicFormHeaderLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    public DynamicFormLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         this.resolveAttributes(context, attrs, defStyleAttr, defStyleRes);
         initLayout();
@@ -106,7 +106,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     private void resolveAttributes(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes){
         final TypedArray a = context.obtainStyledAttributes(
                 attrs,
-                R.styleable.DynamicFormHeaderLayoutAttrs,
+                R.styleable.DynamicFormLayoutAttrs,
                 defStyleAttr, defStyleRes);
         try {
 
@@ -114,22 +114,22 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                 throw new IllegalStateException("The customAttribute: onCreateFooter / onCreateHeader cannot be used within a restricted context");
             }
 
-            final String onCreateHeaderReference = a.getString(R.styleable.DynamicFormHeaderLayoutAttrs_onCreateHeader);
+            final String onCreateHeaderReference = a.getString(R.styleable.DynamicFormLayoutAttrs_onCreateHeader);
             if (onCreateHeaderReference != null) {
                 this.onCreateHeaderMethod = resolveMethod(this, onCreateHeaderReference, View.class);
             }
 
-            final String onCreateFooterReference = a.getString(R.styleable.DynamicFormHeaderLayoutAttrs_onCreateFooter);
+            final String onCreateFooterReference = a.getString(R.styleable.DynamicFormLayoutAttrs_onCreateFooter);
             if (onCreateFooterReference != null) {
                 this.onCreateFooterMethod = resolveMethod(this, onCreateFooterReference, View.class);
             }
 
-            final String onActiveSectionChangedReference = a.getString(R.styleable.DynamicFormHeaderLayoutAttrs_onActiveSectionChanged);
+            final String onActiveSectionChangedReference = a.getString(R.styleable.DynamicFormLayoutAttrs_onActiveSectionChanged);
             if (onActiveSectionChangedReference != null) {
                 this.onActiveSectionChangedMethod = resolveMethod(this, onActiveSectionChangedReference, List.class, int.class, int.class);
             }
 
-            scrollToSectionMargin = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_scrollToSectionMargin, 0);
+            scrollToSectionMargin = a.getDimensionPixelSize(R.styleable.DynamicFormLayoutAttrs_scrollToSectionMargin, 0);
 
             resolvePaddingAttributes(a);
 
@@ -139,11 +139,11 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     }
 
     private void resolvePaddingAttributes(TypedArray a) {
-        int delegatedFormPadding = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_formPadding, -1);
-        delegatedFormPaddingLeft = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_formPaddingLeft, -1);
-        delegatedFormPaddingTop = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_formPaddingTop, -1);
-        delegatedFormPaddingRight = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_formPaddingRight, -1);
-        delegatedFormPaddingBottom = a.getDimensionPixelSize(R.styleable.DynamicFormHeaderLayoutAttrs_formPaddingBottom, -1);
+        int delegatedFormPadding = a.getDimensionPixelSize(R.styleable.DynamicFormLayoutAttrs_formPadding, -1);
+        delegatedFormPaddingLeft = a.getDimensionPixelSize(R.styleable.DynamicFormLayoutAttrs_formPaddingLeft, -1);
+        delegatedFormPaddingTop = a.getDimensionPixelSize(R.styleable.DynamicFormLayoutAttrs_formPaddingTop, -1);
+        delegatedFormPaddingRight = a.getDimensionPixelSize(R.styleable.DynamicFormLayoutAttrs_formPaddingRight, -1);
+        delegatedFormPaddingBottom = a.getDimensionPixelSize(R.styleable.DynamicFormLayoutAttrs_formPaddingBottom, -1);
 
         // Check whether padding and formPaddingLeft/Top/Right/Bottom are used exclusively
         if (delegatedFormPaddingLeft > -1 || delegatedFormPaddingTop > -1 || delegatedFormPaddingRight > -1 || delegatedFormPaddingBottom > -1) {
@@ -335,14 +335,14 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
 
     /**
      * Adds <code>child</code> to header data if child's
-     * <code>pinAllowed</code> attribute is set <code>true</code>.
+     * <code>sectionHeader</code> attribute is set <code>true</code>.
      * @param child
      */
     private void updateHeaderData(View child) {
 
         ViewGroup.LayoutParams layoutParams = child.getLayoutParams();
-        if (layoutParams instanceof DynamicFormHeaderLayout.LayoutParams) {
-            boolean pinAllowed = ((LayoutParams) layoutParams).pinAllowed;
+        if (layoutParams instanceof DynamicFormLayout.LayoutParams) {
+            boolean pinAllowed = ((LayoutParams) layoutParams).sectionHeader;
 
             if (pinAllowed) {
                 SectionData sectionData = new SectionData(child);
@@ -375,7 +375,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
                 setHeaderOnClickListener(sectionData.getUnpinnedHeader(), sectionData);
                 setHeaderOnClickListener(sectionData.getPinnedDownHeader(), sectionData);
 
-                pinnableViewData.add(sectionData);
+                sectionsData.add(sectionData);
             }
         }
     }
@@ -398,10 +398,10 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         // Calculate header height at time user scrolls the
         // form in a such way that <code>formView</code> is
         // the first visible component of the form.
-        // We can rely on the fact that <code>pinnableViewData</code>
+        // We can rely on the fact that <code>sectionsData</code>
         // are ordered the same way as views are shown in the header/footer.
         int headerHeigthAfterScroll = 0;
-        for (SectionData data : pinnableViewData) {
+        for (SectionData data : sectionsData) {
             // We are done if we reached the view on which user clicked
             if (data == sectionData) break;
             headerHeigthAfterScroll += data.getPinnedUpHeader().getHeight();
@@ -457,7 +457,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     private void initFormSectionHeadersList() {
         if (onActiveSectionChangedMethod != null) {
             List<View> formSectionHeaders = new LinkedList<>();
-            for (SectionData data : pinnableViewData) {
+            for (SectionData data : sectionsData) {
                 formSectionHeaders.add(data.getUnpinnedHeader());
             }
             this.formSectionHeaders = Collections.unmodifiableList(formSectionHeaders);
@@ -470,17 +470,17 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
     }
 
     @Override
-    protected DynamicFormHeaderLayout.LayoutParams generateDefaultLayoutParams() {
+    protected DynamicFormLayout.LayoutParams generateDefaultLayoutParams() {
         return new LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
     }
 
     @Override
-    public DynamicFormHeaderLayout.LayoutParams generateLayoutParams(AttributeSet attributeSet) {
+    public DynamicFormLayout.LayoutParams generateLayoutParams(AttributeSet attributeSet) {
         return new LayoutParams(getContext(), attributeSet);
     }
 
     @Override
-    protected DynamicFormHeaderLayout.LayoutParams generateLayoutParams(ViewGroup.LayoutParams p) {
+    protected DynamicFormLayout.LayoutParams generateLayoutParams(ViewGroup.LayoutParams p) {
         return new LayoutParams(p);
     }
 
@@ -501,11 +501,11 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         previousScrollX = scrollX;
         previousScrollY = scrollY;
 
-        // calculate current header size and footer size from pinnableViewData,
+        // calculate current header size and footer size from sectionsData,
         // headerLayout.getHeight cant be used due inconsistent data after addView when swipe is used
         int headerSizeByData = 0;
         int footerSizeByData = 0;
-        for (SectionData data : pinnableViewData) {
+        for (SectionData data : sectionsData) {
             if (data.getHeaderState() == SectionData.HeaderState.PINNED_UP) {
                 headerSizeByData += data.getPinnedUpHeader().getHeight();
             } else if (data.getHeaderState() == SectionData.HeaderState.PINNED_DOWN) {
@@ -515,7 +515,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
 
         // Check 'pin allowed' views visibility
         boolean updateHeaders = false;
-        for (SectionData data : pinnableViewData) {
+        for (SectionData data : sectionsData) {
             float viewY = data.getUnpinnedHeader().getY();
             if (scrollY + headerSizeByData > viewY + (data.getHeaderState() == SectionData.HeaderState.PINNED_UP ? data.getPinnedUpHeader().getHeight() : 0)) {
                 updateHeaders |= data.update(SectionData.HeaderState.PINNED_UP);
@@ -527,8 +527,8 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         }
 
         if (updateHeaders) {
-            for (int i = 0; i < pinnableViewData.size(); i++) {
-                SectionData section = pinnableViewData.get(i);
+            for (int i = 0; i < sectionsData.size(); i++) {
+                SectionData section = sectionsData.get(i);
 
                 // Update header/footer containers if any change occurred
 
@@ -553,7 +553,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
             }
         }
 
-        for (SectionData section : pinnableViewData) {
+        for (SectionData section : sectionsData) {
             if (onActiveSectionChangedMethod != null) {
                 if (isScrollImplicit() && isImplicitScrollFinished(scrollY, oldScrollY)) {
                     setActiveSection(activeSectionAfterScroll);
@@ -631,7 +631,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         // Ignore if section is already active
         if (isSectionActive(section)) return;
 
-        int newIndex = pinnableViewData.indexOf(section);
+        int newIndex = sectionsData.indexOf(section);
         int previousIndex = activeSectionIndex;
 
         activeSection = section;
@@ -646,7 +646,7 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
 
     private static class LayoutParams extends LinearLayout.LayoutParams {
 
-        private boolean pinAllowed = false;
+        private boolean sectionHeader = false;
 
         public LayoutParams(Context c, AttributeSet attrs) {
             super(c, attrs);
@@ -662,16 +662,16 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
         }
 
         private void readCustomParams(Context c, AttributeSet attrs){
-            TypedArray typedArray = c.obtainStyledAttributes(attrs, R.styleable.DynamicFormHeaderLayoutParams);
+            TypedArray typedArray = c.obtainStyledAttributes(attrs, R.styleable.DynamicFormLayoutParams);
             try {
-                this.pinAllowed = typedArray.getBoolean(R.styleable.DynamicFormHeaderLayoutParams_pinAllowed, false);
+                this.sectionHeader = typedArray.getBoolean(R.styleable.DynamicFormLayoutParams_sectionHeader, false);
             } finally {
                 typedArray.recycle();
             }
         }
 
-        public boolean isPinAllowed() {
-            return pinAllowed;
+        public boolean isSectionHeader() {
+            return sectionHeader;
         }
     }
 
@@ -755,21 +755,21 @@ public class DynamicFormHeaderLayout extends LinearLayout implements View.OnScro
             // Detect section to which 'child' belongs by traversing
             // 'formLayout' upwards ('formLayout' is LinearLayout therefore
             // we can traverse its children by index until child with
-            // 'pinAllowed' attribute is found).
+            // 'sectionHeader' attribute is found).
 
             View sectionFormView = null;
             int viewIndex = getFormLayout().indexOfChild(child);
             for (int i = viewIndex-1; i>=0; i--) {
                 child = getFormLayout().getChildAt(i);
                 LayoutParams layoutParams = (LayoutParams) child.getLayoutParams();
-                if (layoutParams.isPinAllowed()) {
+                if (layoutParams.isSectionHeader()) {
                     sectionFormView = child;
                     break;
                 }
             }
 
             if (sectionFormView != null) {
-                for (SectionData sectionData : pinnableViewData) {
+                for (SectionData sectionData : sectionsData) {
                     if (sectionData.getUnpinnedHeader() == sectionFormView) {
                         setActiveSectionAfterScroll(sectionData);
                     }

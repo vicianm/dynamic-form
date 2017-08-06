@@ -2,18 +2,18 @@ apply plugin: 'com.android.library'
 
 ext {
     bintrayRepo = 'maven'
-    bintrayName = 'dynamic-form-header'
+    bintrayName = 'dynamic-form'
 
-    publishedGroupId = 'org.github.vicianm'
-    libraryName = 'dynamic-form-header'
-    artifact = 'dynamic-form-header'
+    publishedGroupId = 'com.github.vicianm'
+    libraryName = 'dynamic-form'
+    artifact = 'dynamic-form'
 
-    libraryDescription = 'Android library with layout (DynamicFormHeaderLayout) to emulate floating headers and footers of large structured forms.'
+    libraryDescription = 'Android library with layout (DynamicFormLayout) to emulate floating headers and footers of large structured forms.'
 
-    siteUrl = 'https://github.com/vicianm/dynamic-form-header'
-    gitUrl = 'https://github.com/vicianm/dynamic-form-header.git'
+    siteUrl = 'https://github.com/vicianm/dynamic-form'
+    gitUrl = 'https://github.com/vicianm/dynamic-form.git'
 
-    libraryVersion = '0.1'
+    libraryVersion = '0.2'
 
     developerId = 'vicianm'
     developerName = 'Michal Vician'
@@ -30,8 +30,8 @@ android {
     defaultConfig {
         minSdkVersion 23
         targetSdkVersion 25
-        versionCode 1
-        versionName "v0.1-SNAPSHOT"
+        versionCode 2
+        versionName "v0.2-SNAPSHOT"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 

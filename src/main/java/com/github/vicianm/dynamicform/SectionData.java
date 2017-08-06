@@ -1,11 +1,11 @@
-package sk.plaut.dynamicformheader;
+package com.github.vicianm.dynamicform;
 
 import android.view.View;
 
 /**
  * Form sections data holder.
  * <p>This data is used to hold state of form sections (section header is pinned up etc.)
- * and to speed up calculations in {@link DynamicFormHeaderLayout}.</p>
+ * and to speed up calculations in {@link DynamicFormLayout}.</p>
  */
 public class SectionData {
 

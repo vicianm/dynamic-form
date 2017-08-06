@@ -1,4 +1,4 @@
-package sk.plaut.dynamicformheader;
+package com.github.vicianm.dynamicform;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

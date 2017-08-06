@@ -1,4 +1,4 @@
-package sk.plaut.dynamicformheader;
+package com.github.vicianm.dynamicform;
 
 import org.junit.Test;
 
