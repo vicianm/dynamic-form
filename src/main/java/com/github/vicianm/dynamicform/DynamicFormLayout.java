@@ -6,6 +6,7 @@ import android.content.res.TypedArray;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -253,8 +254,31 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
     }
 
     protected ScrollView createFormLayoutScrollView() {
-        ScrollView scrollView = new ScrollView(getContext());
+
+        final ScrollView scrollView = new ScrollView(getContext()) {
+            @Override
+            protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+                super.onSizeChanged(w, h, oldw, oldh);
+
+                // Update section data and views after container size is changed.
+                // The size change might cause that different headers are pinned/unpinned
+                // in header/footer container views.
+                // Note: ScrollView size is typically changed after soft keyboard is
+                //       shown or hidden. Unfortunately there is no keyboard show/hide
+                //       callback in Android. So far updating UI in post(...) method works.
+                //       For problems with soft keyboard show/hide detection see following link:
+                //       - https://stackoverflow.com/questions/4745988/how-do-i-detect-if-software-keyboard-is-visible-on-android-device
+                //       - https://groups.google.com/forum/#!topic/android-platform/FyjybyM0wGA
+                post(new Runnable(){
+                    @Override
+                    public void run() {
+                        updateSectionDataAndUi(getScrollY(), getScrollY(), true);
+                    }
+                });
+            }
+        };
         scrollView.setOnScrollChangeListener(this);
+
         return scrollView;
     }
 
@@ -299,7 +323,7 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
             super.addView(child, index, params);
         } else {
             formLayout.addView(child, index, params);
-            updateHeaderData(child);
+            initSectionDataForView(child);
         }
     }
 
@@ -309,7 +333,7 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
             super.addView(child, index);
         } else {
             formLayout.addView(child, index);
-            updateHeaderData(child);
+            initSectionDataForView(child);
         }
     }
 
@@ -319,7 +343,7 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
             super.addView(child, params);
         } else {
             formLayout.addView(child, params);
-            updateHeaderData(child);
+            initSectionDataForView(child);
         }
     }
 
@@ -329,22 +353,23 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
             super.addView(child, width, height);
         } else {
             formLayout.addView(child, width, height);
-            updateHeaderData(child);
+            initSectionDataForView(child);
         }
     }
 
     /**
-     * Adds <code>child</code> to header data if child's
+     * Initializes section data for child view if child's
      * <code>sectionHeader</code> attribute is set <code>true</code>.
-     * @param child
+     * View's without <code>sectionHeader</code> attribute are ignored.
+     * @param child View for which <code>SectionData</code> should be initialized.
      */
-    private void updateHeaderData(View child) {
+    private void initSectionDataForView(View child) {
 
         ViewGroup.LayoutParams layoutParams = child.getLayoutParams();
         if (layoutParams instanceof DynamicFormLayout.LayoutParams) {
-            boolean pinAllowed = ((LayoutParams) layoutParams).sectionHeader;
+            boolean sectionHeader = ((LayoutParams) layoutParams).sectionHeader;
 
-            if (pinAllowed) {
+            if (sectionHeader) {
                 SectionData sectionData = new SectionData(child);
                 View formView = sectionData.getUnpinnedHeader();
 
@@ -404,7 +429,7 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
         for (SectionData data : sectionsData) {
             // We are done if we reached the view on which user clicked
             if (data == sectionData) break;
-            headerHeigthAfterScroll += data.getPinnedUpHeader().getHeight();
+            headerHeigthAfterScroll += data.getUnpinnedHeader().getHeight();
         }
 
         // Location where we should first
@@ -501,8 +526,13 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
         previousScrollX = scrollX;
         previousScrollY = scrollY;
 
-        // calculate current header size and footer size from sectionsData,
-        // headerLayout.getHeight cant be used due inconsistent data after addView when swipe is used
+        updateSectionDataAndUi(scrollY, oldScrollY, false);
+    }
+
+    protected void updateSectionDataAndUi(int scrollY, int oldScrollY, boolean forceUpdateUi) {
+
+        // Calculate current header size and footer size from sectionsData,
+        // headerLayout.getHeight can't be used due inconsistent data after addView when swipe is used
         int headerSizeByData = 0;
         int footerSizeByData = 0;
         for (SectionData data : sectionsData) {
@@ -513,26 +543,27 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
             }
         }
 
-        // Check 'pin allowed' views visibility
-        boolean updateHeaders = false;
+        // Update header views data - detect which headers are
+        // hidden (PINNED_UP/PINNED_DOWN) and which are visible (UNPINNED)
+        boolean updateUi = false;
         for (SectionData data : sectionsData) {
             float viewY = data.getUnpinnedHeader().getY();
             if (scrollY + headerSizeByData > viewY + (data.getHeaderState() == SectionData.HeaderState.PINNED_UP ? data.getPinnedUpHeader().getHeight() : 0)) {
-                updateHeaders |= data.update(SectionData.HeaderState.PINNED_UP);
-            } else if (scrollY + v.getHeight() - footerSizeByData < viewY + (data.getHeaderState() == SectionData.HeaderState.PINNED_DOWN ? 0 : data.getUnpinnedHeader().getHeight())) {
-                updateHeaders |= data.update(SectionData.HeaderState.PINNED_DOWN);
+                updateUi |= data.update(SectionData.HeaderState.PINNED_UP);
+            } else if (scrollY + formLayoutScrollView.getHeight() - footerSizeByData < viewY + (data.getHeaderState() == SectionData.HeaderState.PINNED_DOWN ? 0 : data.getUnpinnedHeader().getHeight())) {
+                updateUi |= data.update(SectionData.HeaderState.PINNED_DOWN);
             } else {
-                updateHeaders |= data.update(SectionData.HeaderState.UNPINNED);
+                updateUi |= data.update(SectionData.HeaderState.UNPINNED);
             }
         }
 
-        if (updateHeaders) {
+        // Update UI according to previously calculated SectionData
+        if (updateUi || forceUpdateUi) {
+            int pinnedDownIndex = 0;
             for (int i = 0; i < sectionsData.size(); i++) {
                 SectionData section = sectionsData.get(i);
 
-                // Update header/footer containers if any change occurred
-
-                if (section.isStateUpdated()) {
+                if (section.isStateUpdated() || forceUpdateUi) {
 
                     // Ensure child is removed from parent
                     headerLayout.removeView(section.getPinnedUpHeader());
@@ -543,7 +574,8 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
                             headerLayout.addView(section.getPinnedUpHeader());
                             break;
                         case PINNED_DOWN:
-                            footerLayout.addView(section.getPinnedDownHeader(), 0);
+                            footerLayout.addView(section.getPinnedDownHeader(), pinnedDownIndex);
+                            pinnedDownIndex++;
                             break;
                         case UNPINNED:
                             // nothing to do with header/footer container
@@ -553,6 +585,8 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
             }
         }
 
+        // Detect if 'active section' has changed.
+        // If so then notify listener registered layout XML file.
         for (SectionData section : sectionsData) {
             if (onActiveSectionChangedMethod != null) {
                 if (isScrollImplicit() && isImplicitScrollFinished(scrollY, oldScrollY)) {
@@ -731,8 +765,6 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
 
     @Override
     public void onGlobalFocusChanged(View oldFocus, View newFocus) {
-
-        SectionData activeSectionHeaderData = null;
 
         // Traverse view hierarchy down to 'formLayout'
         // to find View which is a direct child of 'formLayout'.
