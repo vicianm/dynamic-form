@@ -54,13 +54,6 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
 
     private List<SectionData> sectionsData = new LinkedList<>();
 
-    /**
-     * Immutable list of formSectionHeaders which is passed to
-     * onActiveSectionChanged(...) callback if user defined on in layout XML file.
-     * @see com.github.vicianm.dynamicform.R.styleable#DynamicFormLayoutAttrs_onActiveSectionChanged
-     */
-    private List<View> formSectionHeaders;
-
     private SectionData activeSectionAfterScroll = null;
     private SectionData activeSection = null;
     private int activeSectionIndex = -1;
@@ -493,22 +486,6 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
     protected void onFinishInflate() {
         super.onFinishInflate();
         inflateFinished = true;
-        initFormSectionHeadersList();
-    }
-
-    /**
-     * Called after XML layout is inflated to init unmodifiable
-     * list of section headers which serves as a parameter for
-     * {@link #onActiveSectionChangedMethod} callback.
-     */
-    private void initFormSectionHeadersList() {
-        if (onActiveSectionChangedMethod != null) {
-            List<View> formSectionHeaders = new LinkedList<>();
-            for (SectionData data : sectionsData) {
-                formSectionHeaders.add(data.getUnpinnedHeader());
-            }
-            this.formSectionHeaders = Collections.unmodifiableList(formSectionHeaders);
-        }
     }
 
     @Override
@@ -700,7 +677,7 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
         activeSection = section;
         activeSectionIndex = newIndex;
 
-        onActiveSectionChangedMethod.invoke(formSectionHeaders, newIndex, previousIndex);
+        onActiveSectionChangedMethod.invoke(sectionsData, newIndex, previousIndex);
     }
 
     private boolean isSectionActive(SectionData section) {
