@@ -14,6 +14,7 @@ import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.TextView;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -29,6 +30,8 @@ import java.util.List;
  * footer or header of the form is it is no longer visible.</p>
  */
 public class DynamicFormLayout extends LinearLayout implements View.OnScrollChangeListener, ViewTreeObserver.OnGlobalFocusChangeListener {
+
+    public static final String TAG = DynamicFormLayout.class.getSimpleName();
 
     private boolean inflateFinished = false;
 
@@ -258,7 +261,13 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
         final ScrollView scrollView = new ScrollView(getContext()) {
             @Override
             protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+
+                Log.d(TAG, "onSizeChanged(int w, int h, int oldw, int oldh)");
+
+                activeSectionAfterScroll = activeSection;
+
                 super.onSizeChanged(w, h, oldw, oldh);
+
 
                 // Update section data and views after container size is changed.
                 // The size change might cause that different headers are pinned/unpinned
@@ -272,7 +281,20 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
                 post(new Runnable(){
                     @Override
                     public void run() {
+                        Log.d(TAG, "updateSectionDataAndUi(getScrollY(), getScrollY(), true)");
+
+                        // Size of our container (ScrollView) has changed.
+                        // Reset UI = recalculate section data and update UI of headers and footers.
                         updateSectionDataAndUi(getScrollY(), getScrollY(), true);
+
+                        if (activeSectionAfterScroll != null) {
+                            // Ensure ensure that previously active section is fully visibile.
+                            // If part of the section is hidden then we need to scroll the viewport.
+                            boolean scrollNeeded = scrollToSection(activeSectionAfterScroll);
+                            if (!scrollNeeded) {
+                                resetImplicitScrollParams();
+                            }
+                        }
                     }
                 });
             }
@@ -526,6 +548,8 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
         previousScrollX = scrollX;
         previousScrollY = scrollY;
 
+        Log.d(TAG, "onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY)");
+
         updateSectionDataAndUi(scrollY, oldScrollY, false);
     }
 
@@ -604,6 +628,9 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
     }
 
     private void resetImplicitScrollParams() {
+
+        Log.d(TAG, "resetImplicitScrollParams()");
+
         activeSectionAfterScroll = null;
         implicitScrollToY = -1;
     }
@@ -664,6 +691,8 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
 
         // Ignore if section is already active
         if (isSectionActive(section)) return;
+
+        Log.d(TAG, "setActiveSection(SectionData section): " + debugGetSection(section));
 
         int newIndex = sectionsData.indexOf(section);
         int previousIndex = activeSectionIndex;
@@ -808,6 +837,10 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
                 }
             }
         }
+    }
+
+    private String debugGetSection(SectionData sectionData) {
+        return ((TextView)sectionData.getUnpinnedHeader()).getText().toString();
     }
 
 }
