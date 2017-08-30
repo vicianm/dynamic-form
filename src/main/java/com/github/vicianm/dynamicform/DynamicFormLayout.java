@@ -680,6 +680,10 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
         return activeSection == section;
     }
 
+    public List<SectionData> getSectionsData() {
+        return sectionsData;
+    }
+
     private static class LayoutParams extends LinearLayout.LayoutParams {
 
         private boolean sectionHeader = false;

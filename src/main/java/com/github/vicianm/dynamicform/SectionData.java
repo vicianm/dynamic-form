@@ -51,11 +51,11 @@ public class SectionData {
         return unpinnedHeader;
     }
 
-    public void setPinnedUpHeader(View pinnedUpHeader) {
+    protected void setPinnedUpHeader(View pinnedUpHeader) {
         this.pinnedUpHeader = pinnedUpHeader;
     }
 
-    public void setPinnedDownHeader(View pinnedDownHeader) {
+    protected void setPinnedDownHeader(View pinnedDownHeader) {
         this.pinnedDownHeader = pinnedDownHeader;
     }
 
