@@ -14,11 +14,9 @@ import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.TextView;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -669,8 +667,6 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
         // Ignore if section is already active
         if (isSectionActive(section)) return;
 
-        Log.d(TAG, "setActiveSection(SectionData section): " + debugGetSection(section));
-
         int newIndex = sectionsData.indexOf(section);
         int previousIndex = activeSectionIndex;
 
@@ -814,10 +810,6 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
                 }
             }
         }
-    }
-
-    private String debugGetSection(SectionData sectionData) {
-        return ((TextView)sectionData.getUnpinnedHeader()).getText().toString();
     }
 
 }
