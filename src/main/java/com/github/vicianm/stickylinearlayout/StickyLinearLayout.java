@@ -1,4 +1,4 @@
-package com.github.vicianm.dynamicform;
+package com.github.vicianm.stickylinearlayout;
 
 import android.content.Context;
 import android.content.ContextWrapper;
@@ -27,9 +27,9 @@ import java.util.List;
  * <p>View with <code>sectionHeader="true"</code> will be pinned to
  * footer or header of the form is it is no longer visible.</p>
  */
-public class DynamicFormLayout extends LinearLayout implements View.OnScrollChangeListener, ViewTreeObserver.OnGlobalFocusChangeListener {
+public class StickyLinearLayout extends LinearLayout implements View.OnScrollChangeListener, ViewTreeObserver.OnGlobalFocusChangeListener {
 
-    public static final String TAG = DynamicFormLayout.class.getSimpleName();
+    public static final String TAG = StickyLinearLayout.class.getSimpleName();
 
     private boolean inflateFinished = false;
 
@@ -41,7 +41,7 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
     /**
      * Default 'scroll to section' margin values used
      * by all sections until not overiden by a specific section.
-     * @see com.github.vicianm.dynamicform.R.attr#scrollToSectionMargin
+     * @see com.github.vicianm.stickylinearlayout.R.attr#scrollToSectionMargin
      */
     private int defaultScrollToSectionMargin = 0;
     private int implicitScrollToY = -1;
@@ -65,19 +65,19 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
     private MethodWithContext onCreateFooterMethod;
     private MethodWithContext onActiveSectionChangedMethod;
 
-    public DynamicFormLayout(Context context) {
+    public StickyLinearLayout(Context context) {
         this(context, null);
     }
 
-    public DynamicFormLayout(Context context, @Nullable AttributeSet attrs) {
+    public StickyLinearLayout(Context context, @Nullable AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public DynamicFormLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
+    public StickyLinearLayout(Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
         this(context, attrs, defStyleAttr, 0);
     }
 
-    public DynamicFormLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+    public StickyLinearLayout(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         this.resolveAttributes(context, attrs, defStyleAttr, defStyleRes);
         initLayout();
@@ -106,7 +106,7 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
     private void resolveAttributes(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes){
         final TypedArray a = context.obtainStyledAttributes(
                 attrs,
-                R.styleable.DynamicFormLayoutAttrs,
+                R.styleable.StickyLinearLayoutAttrs,
                 defStyleAttr, defStyleRes);
         try {
 
@@ -114,22 +114,22 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
                 throw new IllegalStateException("The customAttribute: onCreateFooter / onCreateHeader cannot be used within a restricted context");
             }
 
-            final String onCreateHeaderReference = a.getString(R.styleable.DynamicFormLayoutAttrs_onCreateHeader);
+            final String onCreateHeaderReference = a.getString(R.styleable.StickyLinearLayoutAttrs_onCreateHeader);
             if (onCreateHeaderReference != null) {
                 this.onCreateHeaderMethod = resolveMethod(this, onCreateHeaderReference, View.class);
             }
 
-            final String onCreateFooterReference = a.getString(R.styleable.DynamicFormLayoutAttrs_onCreateFooter);
+            final String onCreateFooterReference = a.getString(R.styleable.StickyLinearLayoutAttrs_onCreateFooter);
             if (onCreateFooterReference != null) {
                 this.onCreateFooterMethod = resolveMethod(this, onCreateFooterReference, View.class);
             }
 
-            final String onActiveSectionChangedReference = a.getString(R.styleable.DynamicFormLayoutAttrs_onActiveSectionChanged);
+            final String onActiveSectionChangedReference = a.getString(R.styleable.StickyLinearLayoutAttrs_onActiveSectionChanged);
             if (onActiveSectionChangedReference != null) {
                 this.onActiveSectionChangedMethod = resolveMethod(this, onActiveSectionChangedReference, List.class, int.class, int.class);
             }
 
-            defaultScrollToSectionMargin = a.getDimensionPixelSize(R.styleable.DynamicFormLayoutAttrs_defaultScrollToSectionMargin, 0);
+            defaultScrollToSectionMargin = a.getDimensionPixelSize(R.styleable.StickyLinearLayoutAttrs_defaultScrollToSectionMargin, 0);
 
             resolvePaddingAttributes(a);
 
@@ -139,11 +139,11 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
     }
 
     private void resolvePaddingAttributes(TypedArray a) {
-        int delegatedFormPadding = a.getDimensionPixelSize(R.styleable.DynamicFormLayoutAttrs_formPadding, -1);
-        delegatedFormPaddingLeft = a.getDimensionPixelSize(R.styleable.DynamicFormLayoutAttrs_formPaddingLeft, -1);
-        delegatedFormPaddingTop = a.getDimensionPixelSize(R.styleable.DynamicFormLayoutAttrs_formPaddingTop, -1);
-        delegatedFormPaddingRight = a.getDimensionPixelSize(R.styleable.DynamicFormLayoutAttrs_formPaddingRight, -1);
-        delegatedFormPaddingBottom = a.getDimensionPixelSize(R.styleable.DynamicFormLayoutAttrs_formPaddingBottom, -1);
+        int delegatedFormPadding = a.getDimensionPixelSize(R.styleable.StickyLinearLayoutAttrs_formPadding, -1);
+        delegatedFormPaddingLeft = a.getDimensionPixelSize(R.styleable.StickyLinearLayoutAttrs_formPaddingLeft, -1);
+        delegatedFormPaddingTop = a.getDimensionPixelSize(R.styleable.StickyLinearLayoutAttrs_formPaddingTop, -1);
+        delegatedFormPaddingRight = a.getDimensionPixelSize(R.styleable.StickyLinearLayoutAttrs_formPaddingRight, -1);
+        delegatedFormPaddingBottom = a.getDimensionPixelSize(R.styleable.StickyLinearLayoutAttrs_formPaddingBottom, -1);
 
         // Check whether padding and formPaddingLeft/Top/Right/Bottom are used exclusively
         if (delegatedFormPaddingLeft > -1 || delegatedFormPaddingTop > -1 || delegatedFormPaddingRight > -1 || delegatedFormPaddingBottom > -1) {
@@ -384,7 +384,7 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
     private void initSectionDataForView(View child) {
 
         ViewGroup.LayoutParams layoutParams = child.getLayoutParams();
-        if (layoutParams instanceof DynamicFormLayout.LayoutParams) {
+        if (layoutParams instanceof StickyLinearLayout.LayoutParams) {
 
             boolean sectionHeader = ((LayoutParams) layoutParams).sectionHeader;
 
@@ -509,17 +509,17 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
     }
 
     @Override
-    protected DynamicFormLayout.LayoutParams generateDefaultLayoutParams() {
+    protected StickyLinearLayout.LayoutParams generateDefaultLayoutParams() {
         return new LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
     }
 
     @Override
-    public DynamicFormLayout.LayoutParams generateLayoutParams(AttributeSet attributeSet) {
+    public StickyLinearLayout.LayoutParams generateLayoutParams(AttributeSet attributeSet) {
         return new LayoutParams(getContext(), attributeSet);
     }
 
     @Override
-    protected DynamicFormLayout.LayoutParams generateLayoutParams(ViewGroup.LayoutParams p) {
+    protected StickyLinearLayout.LayoutParams generateLayoutParams(ViewGroup.LayoutParams p) {
         return new LayoutParams(p);
     }
 
@@ -721,10 +721,10 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
         }
 
         private void readCustomParams(Context c, AttributeSet attrs){
-            TypedArray typedArray = c.obtainStyledAttributes(attrs, R.styleable.DynamicFormLayoutParams);
+            TypedArray typedArray = c.obtainStyledAttributes(attrs, R.styleable.StickyLinearLayoutParams);
             try {
-                this.sectionHeader = typedArray.getBoolean(R.styleable.DynamicFormLayoutParams_sectionHeader, false);
-                this.scrollToSectionMargin = typedArray.getDimensionPixelSize(R.styleable.DynamicFormLayoutParams_scrollToSectionMargin, -1);
+                this.sectionHeader = typedArray.getBoolean(R.styleable.StickyLinearLayoutParams_sectionHeader, false);
+                this.scrollToSectionMargin = typedArray.getDimensionPixelSize(R.styleable.StickyLinearLayoutParams_scrollToSectionMargin, -1);
             } finally {
                 typedArray.recycle();
             }

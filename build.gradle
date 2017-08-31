@@ -2,18 +2,18 @@ apply plugin: 'com.android.library'
 
 ext {
     bintrayRepo = 'maven'
-    bintrayName = 'dynamic-form'
+    bintrayName = 'sticky-linear-layout'
 
     publishedGroupId = 'com.github.vicianm'
-    libraryName = 'dynamic-form'
-    artifact = 'dynamic-form'
+    libraryName = 'sticky-linear-layout'
+    artifact = 'sticky-linear-layout'
 
-    libraryDescription = 'Android library with layout (DynamicFormLayout) to emulate floating headers and footers of large structured forms.'
+    libraryDescription = 'Android library with layout (StickyLinearLayout) to emulate floating headers and footers of large structured forms.'
 
-    siteUrl = 'https://github.com/vicianm/dynamic-form'
-    gitUrl = 'https://github.com/vicianm/dynamic-form.git'
+    siteUrl = 'https://github.com/vicianm/sticky-linear-layout'
+    gitUrl = 'https://github.com/vicianm/sticky-linear-layout.git'
 
-    libraryVersion = '0.3'
+    libraryVersion = '0.4'
 
     developerId = 'vicianm'
     developerName = 'Michal Vician'
@@ -30,8 +30,8 @@ android {
     defaultConfig {
         minSdkVersion 23
         targetSdkVersion 25
-        versionCode 3
-        versionName "0.3"
+        versionCode 4
+        versionName "0.4"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 

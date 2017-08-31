@@ -1,4 +1,4 @@
-package com.github.vicianm.dynamicform;
+package com.github.vicianm.stickylinearlayout;
 
 import org.junit.Test;
 

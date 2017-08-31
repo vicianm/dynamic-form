@@ -1,11 +1,11 @@
-package com.github.vicianm.dynamicform;
+package com.github.vicianm.stickylinearlayout;
 
 import android.view.View;
 
 /**
  * Form sections data holder.
  * <p>This data is used to hold state of form sections (section header is pinned up etc.)
- * and to speed up calculations in {@link DynamicFormLayout}.</p>
+ * and to speed up calculations in {@link StickyLinearLayout}.</p>
  */
 public class SectionData {
 

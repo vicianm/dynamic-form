@@ -1,4 +1,4 @@
-package com.github.vicianm.dynamicform;
+package com.github.vicianm.stickylinearlayout;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
