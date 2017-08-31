@@ -8,7 +8,7 @@ ext {
     libraryName = 'sticky-linear-layout'
     artifact = 'sticky-linear-layout'
 
-    libraryDescription = 'Android library with layout (StickyLinearLayout) to emulate floating headers and footers of large structured forms.'
+    libraryDescription = 'LinearLayout based ViewGroup with capability to pin headers and footers of large structured forms.'
 
     siteUrl = 'https://github.com/vicianm/sticky-linear-layout'
     gitUrl = 'https://github.com/vicianm/sticky-linear-layout.git'
