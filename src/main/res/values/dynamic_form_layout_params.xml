@@ -2,5 +2,6 @@
 <resources>
     <declare-styleable name="DynamicFormLayoutParams">
         <attr name="sectionHeader" format="boolean" />
+        <attr name="scrollToSectionMargin" format="dimension" />
     </declare-styleable>
 </resources>

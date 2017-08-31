@@ -38,7 +38,12 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
     private ScrollView formLayoutScrollView;
     private LinearLayout formLayout;
 
-    private int scrollToSectionMargin = 0;
+    /**
+     * Default 'scroll to section' margin values used
+     * by all sections until not overiden by a specific section.
+     * @see com.github.vicianm.dynamicform.R.attr#scrollToSectionMargin
+     */
+    private int defaultScrollToSectionMargin = 0;
     private int implicitScrollToY = -1;
 
     private int previousScrollY = -1;
@@ -124,7 +129,7 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
                 this.onActiveSectionChangedMethod = resolveMethod(this, onActiveSectionChangedReference, List.class, int.class, int.class);
             }
 
-            scrollToSectionMargin = a.getDimensionPixelSize(R.styleable.DynamicFormLayoutAttrs_scrollToSectionMargin, 0);
+            defaultScrollToSectionMargin = a.getDimensionPixelSize(R.styleable.DynamicFormLayoutAttrs_defaultScrollToSectionMargin, 0);
 
             resolvePaddingAttributes(a);
 
@@ -380,10 +385,18 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
 
         ViewGroup.LayoutParams layoutParams = child.getLayoutParams();
         if (layoutParams instanceof DynamicFormLayout.LayoutParams) {
+
             boolean sectionHeader = ((LayoutParams) layoutParams).sectionHeader;
 
+            // Use global/default margin if
+            // component does not define one itself.
+            int scrollToSectionMargin = ((LayoutParams) layoutParams).scrollToSectionMargin;
+            if (scrollToSectionMargin < 0) {
+                scrollToSectionMargin = defaultScrollToSectionMargin;
+            }
+
             if (sectionHeader) {
-                SectionData sectionData = new SectionData(child);
+                SectionData sectionData = new SectionData(child, scrollToSectionMargin);
                 View formView = sectionData.getUnpinnedHeader();
 
                 // Get header view instance from callback method
@@ -439,9 +452,13 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
         // We can rely on the fact that <code>sectionsData</code>
         // are ordered the same way as views are shown in the header/footer.
         int headerHeigthAfterScroll = 0;
+        int scrollToSectionMargin = 0;
         for (SectionData data : sectionsData) {
             // We are done if we reached the view on which user clicked
-            if (data == sectionData) break;
+            if (data == sectionData) {
+                scrollToSectionMargin = sectionData.getScrollToSectionMargin();
+                break;
+            }
             headerHeigthAfterScroll += data.getUnpinnedHeader().getHeight();
         }
 
@@ -688,6 +705,8 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
 
         private boolean sectionHeader = false;
 
+        private int scrollToSectionMargin = -1;
+
         public LayoutParams(Context c, AttributeSet attrs) {
             super(c, attrs);
             this.readCustomParams(c, attrs);
@@ -705,6 +724,7 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
             TypedArray typedArray = c.obtainStyledAttributes(attrs, R.styleable.DynamicFormLayoutParams);
             try {
                 this.sectionHeader = typedArray.getBoolean(R.styleable.DynamicFormLayoutParams_sectionHeader, false);
+                this.scrollToSectionMargin = typedArray.getDimensionPixelSize(R.styleable.DynamicFormLayoutParams_scrollToSectionMargin, -1);
             } finally {
                 typedArray.recycle();
             }
@@ -713,6 +733,11 @@ public class DynamicFormLayout extends LinearLayout implements View.OnScrollChan
         public boolean isSectionHeader() {
             return sectionHeader;
         }
+
+        public int getScrollToSectionMargin() {
+            return scrollToSectionMargin;
+        }
+
     }
 
     private static class MethodWithContext {

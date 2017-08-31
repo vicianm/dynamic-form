@@ -22,12 +22,15 @@ public class SectionData {
 
     private boolean stateUpdate;
 
+    private int scrollToSectionMargin;
+
     private View unpinnedHeader;
     private View pinnedUpHeader;
     private View pinnedDownHeader;
 
-    public SectionData(View formView) {
+    public SectionData(View formView, int scrollToSectionMargin) {
         this.unpinnedHeader = formView;
+        this.scrollToSectionMargin = scrollToSectionMargin;
     }
 
     public HeaderState getHeaderState() {
@@ -73,6 +76,14 @@ public class SectionData {
      */
     public View getPinnedUpHeader() {
         return pinnedUpHeader;
+    }
+
+    /**
+     * Margin put between this section header and folded sections headers
+     * after scroll (after user manually clicks the section header).
+     */
+    public int getScrollToSectionMargin() {
+        return scrollToSectionMargin;
     }
 
     public boolean update(HeaderState headerState) {
