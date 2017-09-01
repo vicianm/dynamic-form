@@ -8,7 +8,7 @@ There are some solutions similar to this one, but:
 1. They are mostly base around `ListView`, therefore they are not applicable for simple forms.
 1. They usually don't support multiple floating headers (just one header sticks to the top at time).
 
-`StickyLinearLayout` is mostly suitable for the situation when you need to pin section headers of large form based on `LinearLayout`.
+`StickyLinearLayout` is suitable for the situation when you need to pin section headers of large form based on `LinearLayout`.
 
 ## Demo
 
