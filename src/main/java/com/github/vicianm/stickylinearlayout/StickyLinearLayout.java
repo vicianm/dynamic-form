@@ -807,7 +807,12 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
             if (child == null || child.getParent() == getFormLayout()) {
                 break;
             }
-            child = (View)child.getParent();
+            if (child.getParent() instanceof View) {
+                child = (View) child.getParent();
+            } else {
+                // We are probably in different hierarchy (not a form layout)
+                return;
+            }
         }
 
         if (child != null && child.getParent() == getFormLayout()) {
