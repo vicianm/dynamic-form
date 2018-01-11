@@ -29,7 +29,7 @@ public class SectionData {
     private View pinnedDownHeader;
 
     public SectionData(View formView, int scrollToSectionMargin) {
-        this.unpinnedHeader = formView;
+        setUnpinnedHeader(formView);
         this.scrollToSectionMargin = scrollToSectionMargin;
     }
 
@@ -54,12 +54,19 @@ public class SectionData {
         return unpinnedHeader;
     }
 
+    protected void setUnpinnedHeader(View unpinnedHeader) {
+        this.unpinnedHeader = unpinnedHeader;
+        this.unpinnedHeader.setTag(this);
+    }
+
     protected void setPinnedUpHeader(View pinnedUpHeader) {
         this.pinnedUpHeader = pinnedUpHeader;
+        this.pinnedUpHeader.setTag(this);
     }
 
     protected void setPinnedDownHeader(View pinnedDownHeader) {
         this.pinnedDownHeader = pinnedDownHeader;
+        this.pinnedDownHeader.setTag(this);
     }
 
     /**
