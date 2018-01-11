@@ -33,6 +33,7 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
 
     private boolean inflateFinished = false;
 
+    private ScrollView headerScrollView;
     private LinearLayout headerLayout;
     private LinearLayout footerLayout;
     private ScrollView formLayoutScrollView;
@@ -220,9 +221,15 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
         // Header
         FrameLayout.LayoutParams headerParams = new FrameLayout.LayoutParams(
                 LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT
+//                LayoutParams.WRAP_CONTENT
+                200
         );
-        container.addView(headerLayout, 1, headerParams);
+
+        headerScrollView = new ScrollView(getContext());
+        headerScrollView.addView(headerLayout);
+        headerScrollView.setScrollbarFadingEnabled(false);
+
+        container.addView(headerScrollView, 1, headerParams);
 
         // Footer
         FrameLayout.LayoutParams footerParams = new FrameLayout.LayoutParams(
@@ -573,6 +580,10 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
             }
         }
 
+        if (updateUi) {
+            Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ [updateUi=%s]", updateUi));
+        }
+
         // Update UI according to previously calculated SectionData
         if (updateUi || forceUpdateUi) {
             int pinnedDownIndex = 0;
@@ -599,6 +610,29 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
                     }
                 }
             }
+        }
+
+        if (headerLayout.getChildCount() > 0) {
+
+            View last = headerLayout.getChildAt(headerLayout.getChildCount()-1);
+            SectionData section = (SectionData)last.getTag();
+
+            Log.d(StickyLinearLayout.class.getSimpleName(),
+                    String.format("@@@ unpinned [y = %s]",
+                            (section == null ? null : section.getUnpinnedHeader().getY())));
+            Log.d(StickyLinearLayout.class.getSimpleName(),
+                    String.format("@@@ pinned [y = %s]",
+                            (section == null ? null : section.getPinnedUpHeader().getY() - headerScrollView.getScrollY() + scrollY)));
+
+            int newScroll = (int)
+                    (scrollY
+                    +section.getPinnedUpHeader().getY()
+                    -section.getUnpinnedHeader().getY());
+
+            Log.d(StickyLinearLayout.class.getSimpleName(),
+                    String.format("@@@ newScroll [scrollY = %s]", newScroll));
+
+            headerScrollView.scrollTo(0, newScroll);
         }
 
         // Detect if 'active section' has changed.
