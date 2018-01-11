@@ -66,6 +66,11 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
     private MethodWithContext onCreateFooterMethod;
     private MethodWithContext onActiveSectionChangedMethod;
 
+    // TODO -1 default; specify as XML attribute
+    private int maxHeaderRows = 2;
+    // TODO -1 default; specify as XML attribute
+    private int maxFooterRows = -1;
+
     public StickyLinearLayout(Context context) {
         this(context, null);
     }
@@ -82,7 +87,6 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
         super(context, attrs, defStyleAttr, defStyleRes);
         this.resolveAttributes(context, attrs, defStyleAttr, defStyleRes);
         initLayout();
-
     }
 
     @Override
@@ -219,10 +223,12 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
         ));
 
         // Header
+        int paramHeaderHeight = maxHeaderRows <= 0
+                ? LayoutParams.WRAP_CONTENT
+                : maxHeaderRows * 99; // TODO calculate 99 from header view
         FrameLayout.LayoutParams headerParams = new FrameLayout.LayoutParams(
                 LayoutParams.MATCH_PARENT,
-//                LayoutParams.WRAP_CONTENT
-                200
+                paramHeaderHeight
         );
 
         headerScrollView = new ScrollView(getContext());
@@ -232,9 +238,12 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
         container.addView(headerScrollView, 1, headerParams);
 
         // Footer
+        int paramFooterHeight = maxFooterRows <= 0
+                ? LayoutParams.WRAP_CONTENT
+                : maxFooterRows * 99; // TODO calculate 99 from footer view
         FrameLayout.LayoutParams footerParams = new FrameLayout.LayoutParams(
                 LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT
+                paramFooterHeight
         );
         footerParams.gravity = Gravity.BOTTOM;
         container.addView(footerLayout, 1, footerParams);
@@ -565,23 +574,26 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
                 footerSizeByData += data.getPinnedDownHeader().getHeight();
             }
         }
+        int headerScrollSizeByData = headerSizeByData > maxHeaderRows*99 // TODO remove the 99 with calculated value
+                ? maxHeaderRows*99 // TODO remove the 99 with calculated value
+                : headerSizeByData;
+        int footerScrollSizeByData = footerSizeByData > maxFooterRows*99
+//                ? maxFooterRows*99
+                ? footerSizeByData
+                : footerSizeByData;
 
         // Update header views data - detect which headers are
         // hidden (PINNED_UP/PINNED_DOWN) and which are visible (UNPINNED)
         boolean updateUi = false;
         for (SectionData data : sectionsData) {
             float viewY = data.getUnpinnedHeader().getY();
-            if (scrollY + headerSizeByData > viewY + (data.getHeaderState() == SectionData.HeaderState.PINNED_UP ? data.getPinnedUpHeader().getHeight() : 0)) {
+            if (scrollY + headerScrollSizeByData > viewY) {
                 updateUi |= data.update(SectionData.HeaderState.PINNED_UP);
-            } else if (scrollY + formLayoutScrollView.getHeight() - footerSizeByData < viewY + (data.getHeaderState() == SectionData.HeaderState.PINNED_DOWN ? 0 : data.getUnpinnedHeader().getHeight())) {
+            } else if (scrollY + formLayoutScrollView.getHeight() - footerScrollSizeByData < viewY + (data.getHeaderState() == SectionData.HeaderState.PINNED_DOWN ? 0 : data.getUnpinnedHeader().getHeight())) {
                 updateUi |= data.update(SectionData.HeaderState.PINNED_DOWN);
             } else {
                 updateUi |= data.update(SectionData.HeaderState.UNPINNED);
             }
-        }
-
-        if (updateUi) {
-            Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ [updateUi=%s]", updateUi));
         }
 
         // Update UI according to previously calculated SectionData
@@ -612,7 +624,12 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
             }
         }
 
+        // Sync header scroll position in a way that header view
+        // is in sync with the very same form view.
         if (headerLayout.getChildCount() > 0) {
+
+
+
 
             View last = headerLayout.getChildAt(headerLayout.getChildCount()-1);
             SectionData section = (SectionData)last.getTag();
