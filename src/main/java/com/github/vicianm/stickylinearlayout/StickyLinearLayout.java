@@ -763,6 +763,12 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
                         headerLayout.getPaddingRight(),
                         0); // <- clear bottom padding
             }
+
+            // If no header is being pinned then
+            // ensure the header is fully scrolled.
+            // It might be left partially scrolled from
+            // previous animation if the scroll steps were too large.
+            headerScrollView.smoothScrollTo(0, headerScrollView.getBottom());
         }
 
         if (pinningFooter != null) {
