@@ -256,10 +256,11 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
     }
 
     protected ScrollView createHeaderScrollView(View content) {
-        ScrollView scrollView = new ScrollView(getContext());
+        StickyScrollView scrollView = new StickyScrollView(getContext());
         scrollView.setSmoothScrollingEnabled(false);
         scrollView.setHorizontalScrollBarEnabled(false);
         scrollView.setVerticalScrollBarEnabled(false);
+        scrollView.setEnableScrolling(false);
         scrollView.addView(content);
         return scrollView;
     }
