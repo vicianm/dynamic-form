@@ -649,9 +649,6 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
         // - current scroll position of the form
         // - previous content of header/footer (see step A)
 
-
-
-
         boolean updateUi = false;
         int pinnedUpCount = 0;
         int pinnedDownCount = 0;
@@ -709,7 +706,7 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
             if (SectionData.HeaderState.UNPINNED == data.getHeaderState()) {
                 float sectionHeaderY = data.getUnpinnedHeader().getY();
 
-                // This section is UNPINNED yet, but is soon about to be PINNED_UP.
+                // This section is UNPINNED yet, but is soon about to be PINNED_UP
                 // The section will be PINNED_UP after the header is fully scrolled
                 // so there is place for the new header.
                 if (pinnedUpCount >= maxHeaderRows && sectionHeaderY < scrollY + prevHeaderHeight) {
@@ -719,16 +716,17 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
                     TextView sectionTitle = (TextView)sectionLayout.findViewWithTag("title");
                     Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ pinningHeader [title=%s]", sectionTitle.getText().toString()));
                 }
-//                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ sectionHeaderY [y=%s]", sectionHeaderY));
-//                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ prevHeaderHeight [y=%s]", prevHeaderHeight));
-//                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ scrollY + prevHeaderHeight [y=%s]", (scrollY + prevHeaderHeight)));
 
                 // This section is UNPINNED yet, but is soon about to be PINNED_DOWN
                 // The section will be PINNED_DOWN after the footer is fully scrolled
                 // so there is place for the new footer.
-//                if () {
-//                    the same shit for footer
-//                }
+                if (pinnedDownCount >= maxFooterRows && sectionHeaderY + footerRowHeight > scrollY + formViewportHeight - prevFooterHeight) {
+                    pinningFooter = data;
+
+                    LinearLayout sectionLayout = (LinearLayout) pinningFooter.getPinnedDownHeader();
+                    TextView sectionTitle = (TextView)sectionLayout.findViewWithTag("title");
+                    Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ pinningFooter [title=%s]", sectionTitle.getText().toString()));
+                }
             }
         }
 
@@ -810,30 +808,43 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
 
         if (pinningFooter != null) {
 
+            // lazily set top padding
+            if (footerLayout.getPaddingTop() != footerRowHeight) {
+                footerLayout.setPadding(
+                        footerLayout.getPaddingLeft(),
+                        footerRowHeight, // <- padding top
+                        footerLayout.getPaddingRight(),
+                        footerLayout.getPaddingBottom());
+            }
+
+            // calculate new scroll position
+            int newScroll = (int) (
+                    footerRowHeight
+                    - pinningFooter.getUnpinnedHeader().getY()
+                    + scrollY
+                    + formViewportHeight
+                    - footerLayout.getHeight());
+            Log.d(StickyLinearLayout.class.getSimpleName(),
+                    String.format("@@@ newScrollDown [scrollY = %s]", newScroll));
+            // update the scroll
+            footerScrollView.scrollTo(0, newScroll);
+
+        } else {
+            // clear bottom padding
+            if (footerLayout.getPaddingTop() != 0) {
+                footerLayout.setPadding(
+                        footerLayout.getPaddingLeft(),
+                        0, // <- clear top padding
+                        footerLayout.getPaddingRight(),
+                        footerLayout.getPaddingBottom());
+            }
+
+            // If no footer is being pinned then
+            // ensure the footer is fully scrolled.
+            // It might be left partially scrolled from
+            // previous animation if the scroll steps were too large.
+            footerScrollView.smoothScrollTo(0, 0);
         }
-
-
-//        if (headerLayout.getChildCount() > 0) {
-//            View last = headerLayout.getChildAt(headerLayout.getChildCount()-1);
-//            SectionData section = (SectionData)last.getTag();
-//
-//            Log.d(StickyLinearLayout.class.getSimpleName(),
-//                    String.format("@@@ unpinnedUp [y = %s]",
-//                            (section == null ? null : section.getUnpinnedHeader().getY())));
-//            Log.d(StickyLinearLayout.class.getSimpleName(),
-//                    String.format("@@@ pinnedUp [y = %s]",
-//                            (section == null ? null : section.getPinnedUpHeader().getY() - headerScrollView.getScrollY() + scrollY)));
-//
-//            int newScroll = (int)
-//                    (scrollY
-//                            +section.getPinnedUpHeader().getY()
-//                            -section.getUnpinnedHeader().getY());
-//
-//            Log.d(StickyLinearLayout.class.getSimpleName(),
-//                    String.format("@@@ newScrollUp [scrollY = %s]", newScroll));
-//
-//            headerScrollView.scrollTo(0, newScroll);
-//        }
 
         // STEP E:
         // Detect if 'active section' has changed.
@@ -850,7 +861,6 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
                     setActiveSection(section); // This calls onActiveSectionChanged(...) callback
                     break;
                 }
-
             }
         }
     }
