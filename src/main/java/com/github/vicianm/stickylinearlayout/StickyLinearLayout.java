@@ -256,12 +256,20 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
     }
 
     protected ScrollView createHeaderScrollView(View content) {
+
         StickyScrollView scrollView = new StickyScrollView(getContext());
+
         scrollView.setSmoothScrollingEnabled(false);
         scrollView.setHorizontalScrollBarEnabled(false);
         scrollView.setVerticalScrollBarEnabled(false);
         scrollView.setEnableScrolling(false);
+
         scrollView.addView(content);
+
+        // Fill viewport - this way content of footer can be aligned
+        // to bottom. Otherwise it would be shown on the top of footer area.
+        scrollView.setFillViewport(true);
+
         return scrollView;
     }
 
@@ -276,6 +284,17 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
         LinearLayout footerLayout = new LinearLayout(getContext());
         footerLayout.setOrientation(LinearLayout.VERTICAL);
         setHorizontalFormPaddingIfSet(footerLayout);
+
+        // Show content of footer at the bottom.
+        // This works in conjunction with 'fillViewport' param of ScrollView (see createHeaderScrollView).
+        footerLayout.setGravity(Gravity.BOTTOM);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
+        );
+        params.setLayoutDirection(LinearLayout.VERTICAL);
+        footerLayout.setLayoutParams(params);
+
         return footerLayout;
     }
 
@@ -651,11 +670,16 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
                 Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ headerRowHeight [value=%s]", headerRowHeight));
                 Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ scrollY + prevHeaderHeight - headerRowHeight [value=%s]", scrollY + prevHeaderHeight - headerRowHeight));
                 Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ sectionHeaderY < scrollY + prevHeaderHeight - headerRowHeight [value=%s]", sectionHeaderY < scrollY + prevHeaderHeight - headerRowHeight));
-            } else if (sectionHeaderY > scrollY + formViewportHeight - prevFooterHeight) {
-                updateUi |= data.update(SectionData.HeaderState.PINNED_DOWN);
-                pinnedDownCount++;
+
             } else {
-                updateUi |= data.update(SectionData.HeaderState.UNPINNED);
+
+                if(sectionHeaderY > scrollY + formViewportHeight - prevFooterHeight) {
+                    updateUi |= data.update(SectionData.HeaderState.PINNED_DOWN);
+                    pinnedDownCount++;
+                } else {
+                    // fallback
+                    updateUi |= data.update(SectionData.HeaderState.UNPINNED);
+                }
             }
 
             // Debug
