@@ -595,8 +595,6 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
         boolean scrollDown = scrollY > oldScrollY; // scrolling the scrollview content towards the bottom
         boolean scrollUp = !scrollDown; // scrolling the scrollview content towards the top
 
-        Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ scrollDirection [dir=%s]", (scrollDown ? "down" : "up")));
-
         // NAMING CONVENTION:
 
         // "section header"
@@ -639,11 +637,6 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
         int maxFooterHeigth = maxFooterRows*footerRowHeight;
         if (prevFooterHeight > maxFooterHeigth) prevFooterHeight = maxFooterHeigth;
 
-        Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ prevHeaderRowsCount [count=%s]", prevHeaderRowsCount));
-        Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ prevHeaderHeight [height=%s]", prevHeaderHeight));
-        Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ prevFooterRowsCount [count=%s]", prevFooterRowsCount));
-        Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ prevFooterHeight [height=%s]", prevFooterHeight));
-
         // STEP B:
         // Calculate the new content of header/footer ScrollView depending on
         // - current scroll position of the form
@@ -653,23 +646,8 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
         int pinnedUpCount = 0;
         int pinnedDownCount = 0;
 
-        int ddd = 0;
         for (SectionData data : sectionsData) {
             float sectionHeaderY = data.getUnpinnedHeader().getY();
-
-            ddd++;
-            if (ddd == sectionsData.size()-1) {
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ sectionHeaderY [value=%s]", sectionHeaderY));
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ scrollY [value=%s]", scrollY));
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ prevFooterRowsCount [value=%s]", prevFooterRowsCount));
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ maxFooterRows [value=%s]", maxFooterRows));
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ prevHeaderHeight [value=%s]", prevHeaderHeight));
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ prevFooterHeight [value=%s]", prevFooterHeight));
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ headerRowHeight [value=%s]", headerRowHeight));
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ footerRowHeight [value=%s]", footerRowHeight));
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ scrollY + prevHeaderHeight - headerRowHeight [value=%s]", scrollY + prevHeaderHeight - headerRowHeight));
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ sectionHeaderY < scrollY + prevHeaderHeight - headerRowHeight [value=%s]", sectionHeaderY < scrollY + prevHeaderHeight - headerRowHeight));
-            }
 
             if ((scrollDown && prevHeaderRowsCount <  maxHeaderRows && sectionHeaderY < scrollY + prevHeaderHeight) ||
                 (scrollUp   && prevHeaderRowsCount <  maxHeaderRows && sectionHeaderY < scrollY + prevHeaderHeight - headerRowHeight) ||
@@ -690,13 +668,6 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
             } else {
                 updateUi |= data.update(SectionData.HeaderState.UNPINNED);
             }
-
-            // Debug
-            if (data.isStateUpdated()) {
-                LinearLayout sectionLayout = (LinearLayout) data.getPinnedUpHeader();
-                TextView sectionTitle = (TextView)sectionLayout.findViewWithTag("title");
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ state updated [newState=%s, title=%s]", data.getHeaderState(), sectionTitle.getText().toString()));
-            }
         }
 
         SectionData pinningHeader = null;
@@ -711,10 +682,6 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
                 // so there is place for the new header.
                 if (pinnedUpCount >= maxHeaderRows && sectionHeaderY < scrollY + prevHeaderHeight) {
                     pinningHeader = data;
-
-                    LinearLayout sectionLayout = (LinearLayout) pinningHeader.getPinnedUpHeader();
-                    TextView sectionTitle = (TextView)sectionLayout.findViewWithTag("title");
-                    Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ pinningHeader [title=%s]", sectionTitle.getText().toString()));
                 }
 
                 // This section is UNPINNED yet, but is soon about to be PINNED_DOWN
@@ -722,10 +689,6 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
                 // so there is place for the new footer.
                 if (pinnedDownCount >= maxFooterRows && sectionHeaderY + footerRowHeight > scrollY + formViewportHeight - prevFooterHeight) {
                     pinningFooter = data;
-
-                    LinearLayout sectionLayout = (LinearLayout) pinningFooter.getPinnedDownHeader();
-                    TextView sectionTitle = (TextView)sectionLayout.findViewWithTag("title");
-                    Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ pinningFooter [title=%s]", sectionTitle.getText().toString()));
                 }
             }
         }
@@ -734,10 +697,6 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
         // Update UI content of header/footer ScrollView according to calculations in STEP B.
 
         if (updateUi || forceUpdateUi) {
-
-            Log.d(StickyLinearLayout.class.getSimpleName(),
-                    String.format("@@@ updateUi [updateUi=%s, forceUpdateUi=%s]",
-                    updateUi, forceUpdateUi));
 
             int pinnedDownIndex = 0;
             for (int i = 0; i < sectionsData.size(); i++) {
@@ -784,8 +743,6 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
                     + headerLayout.getHeight()
                     - headerRowHeight
                     - pinningHeader.getUnpinnedHeader().getY());
-            Log.d(StickyLinearLayout.class.getSimpleName(),
-                    String.format("@@@ newScrollUp [scrollY = %s]", newScroll));
             // update the scroll
             headerScrollView.scrollTo(0, newScroll);
 
@@ -824,8 +781,6 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
                     + scrollY
                     + formViewportHeight
                     - footerLayout.getHeight());
-            Log.d(StickyLinearLayout.class.getSimpleName(),
-                    String.format("@@@ newScrollDown [scrollY = %s]", newScroll));
             // update the scroll
             footerScrollView.scrollTo(0, newScroll);
 
@@ -861,151 +816,6 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
                     setActiveSection(section); // This calls onActiveSectionChanged(...) callback
                     break;
                 }
-            }
-        }
-    }
-
-    protected void blabla(int scrollY, int oldScrollY, boolean forceUpdateUi) {
-
-        // Calculate current header size and footer size from sectionsData,
-        // headerLayout.getHeight can't be used due inconsistent data after addView when swipe is used
-        int headerSizeByData = 0;
-        int pinnedHeadersCount = 0;
-        int footerSizeByData = 0;
-        int pinnedFootersCount = 0;
-        for (SectionData data : sectionsData) {
-            if (data.getHeaderState() == SectionData.HeaderState.PINNED_UP) {
-                headerSizeByData += data.getPinnedUpHeader().getHeight();
-                pinnedHeadersCount++;
-            } else if (data.getHeaderState() == SectionData.HeaderState.PINNED_DOWN) {
-                footerSizeByData += data.getPinnedDownHeader().getHeight();
-                pinnedFootersCount++;
-            }
-        }
-        int headerScrollSizeByData = headerSizeByData > maxHeaderRows*99 // TODO remove the 99 with calculated value
-                ? maxHeaderRows*99 // TODO remove the 99 with calculated value
-                : headerSizeByData;
-        int footerScrollSizeByData = footerSizeByData > maxFooterRows*99
-                ? maxFooterRows*99
-                : footerSizeByData;
-
-        // Update header views data - detect which headers are
-        // hidden (PINNED_UP/PINNED_DOWN) and which are visible (UNPINNED)
-        boolean updateUi = false;
-        for (SectionData data : sectionsData) {
-            float viewY = data.getUnpinnedHeader().getY();
-            if (scrollY + headerScrollSizeByData > viewY) {
-                updateUi |= data.update(SectionData.HeaderState.PINNED_UP);
-
-            } else if (
-                    pinnedFootersCount < maxFooterRows
-                ?
-                    scrollY + formLayoutScrollView.getHeight() - footerScrollSizeByData < viewY + (data.getHeaderState() == SectionData.HeaderState.PINNED_DOWN ? 0 : data.getUnpinnedHeader().getHeight())
-                :
-                    scrollY + formLayoutScrollView.getHeight() - footerScrollSizeByData < viewY + data.getUnpinnedHeader().getHeight()
-                    ) {
-
-                updateUi |= data.update(SectionData.HeaderState.PINNED_DOWN);
-            } else {
-                updateUi |= data.update(SectionData.HeaderState.UNPINNED);
-            }
-        }
-
-        // Update UI according to previously calculated SectionData
-        if (updateUi || forceUpdateUi) {
-            int pinnedDownIndex = 0;
-            for (int i = 0; i < sectionsData.size(); i++) {
-                SectionData section = sectionsData.get(i);
-
-                if (section.isStateUpdated() || forceUpdateUi) {
-
-                    // Ensure child is removed from parent
-                    headerLayout.removeView(section.getPinnedUpHeader());
-                    footerLayout.removeView(section.getPinnedDownHeader());
-
-                    switch (section.getHeaderState()) {
-                        case PINNED_UP:
-                            headerLayout.addView(section.getPinnedUpHeader());
-                            break;
-                        case PINNED_DOWN:
-                            footerLayout.addView(section.getPinnedDownHeader(), pinnedDownIndex);
-                            pinnedDownIndex++;
-                            break;
-                        case UNPINNED:
-                            // nothing to do with header/footer container
-                            break;
-                    }
-                }
-            }
-        }
-
-        // Sync header scroll position in a way that header view
-        // is in sync with the very same form view.
-        if (headerLayout.getChildCount() > 0) {
-
-            View last = headerLayout.getChildAt(headerLayout.getChildCount()-1);
-            SectionData section = (SectionData)last.getTag();
-
-            Log.d(StickyLinearLayout.class.getSimpleName(),
-                    String.format("@@@ unpinnedUp [y = %s]",
-                            (section == null ? null : section.getUnpinnedHeader().getY())));
-            Log.d(StickyLinearLayout.class.getSimpleName(),
-                    String.format("@@@ pinnedUp [y = %s]",
-                            (section == null ? null : section.getPinnedUpHeader().getY() - headerScrollView.getScrollY() + scrollY)));
-
-            int newScroll = (int)
-                    (scrollY
-                    +section.getPinnedUpHeader().getY()
-                    -section.getUnpinnedHeader().getY());
-
-            Log.d(StickyLinearLayout.class.getSimpleName(),
-                    String.format("@@@ newScrollUp [scrollY = %s]", newScroll));
-
-            headerScrollView.scrollTo(0, newScroll);
-        }
-
-        if (footerLayout.getChildCount() > 0) {
-
-            View first = footerLayout.getChildAt(0);
-            SectionData section = (SectionData)first.getTag();
-
-            Log.d(StickyLinearLayout.class.getSimpleName(),
-                    String.format("@@@ unpinnedDown [y = %s]",
-                            (section == null ? null : section.getUnpinnedHeader().getY())));
-            Log.d(StickyLinearLayout.class.getSimpleName(),
-                    String.format("@@@ pinnedDown [y = %s]",
-                            (section == null ? null :
-                                    section.getPinnedDownHeader().getY()
-                                    - section.getUnpinnedHeader().getY()
-                                    + footerScrollView.getScrollY()
-                                    + scrollY)));
-
-            int newScroll = (int)
-                    (section.getPinnedDownHeader().getY()
-                    -section.getUnpinnedHeader().getY()
-                    +scrollY
-                    +footerScrollView.getY());
-
-            Log.d(StickyLinearLayout.class.getSimpleName(),
-                    String.format("@@@ newScrollDown [scrollY = %s]", newScroll));
-
-            footerScrollView.scrollTo(0, newScroll);
-        }
-
-        // Detect if 'active section' has changed.
-        // If so then notify listener registered layout XML file.
-        for (SectionData section : sectionsData) {
-            if (onActiveSectionChangedMethod != null) {
-                if (isScrollImplicit() && isImplicitScrollFinished(scrollY, oldScrollY)) {
-                    setActiveSection(activeSectionAfterScroll);
-                    resetImplicitScrollParams();
-                    break;
-                } else if (!isScrollImplicit() &&
-                        section.getHeaderState() == SectionData.HeaderState.UNPINNED) {
-                    setActiveSection(section); // This calls onActiveSectionChanged(...) callback
-                    break;
-                }
-
             }
         }
     }
