@@ -617,19 +617,17 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
         // before and after the scroll.
 
         int formViewportHeight = formLayoutScrollView.getHeight();
-        int headerRowHeight = 0; // height of the single header row
+        int headerRowHeight = 99; // TODO calculate: height of the single header row
         int prevHeaderHeight = 0;
         int prevHeaderRowsCount = 0;
-        int footerRowHeight = 0; // height of the single footer row
+        int footerRowHeight = 99; // TODO calculate: height of the single footer row
         int prevFooterHeight = 0;
         int prevFooterRowsCount = 0;
         for (SectionData data : sectionsData) {
             if (data.getHeaderState() == SectionData.HeaderState.PINNED_UP) {
-                if (headerRowHeight == 0) headerRowHeight = data.getPinnedUpHeader().getHeight();
                 prevHeaderHeight += data.getPinnedUpHeader().getHeight();
                 prevHeaderRowsCount++;
             } else if (data.getHeaderState() == SectionData.HeaderState.PINNED_DOWN) {
-                if (footerRowHeight == 0) footerRowHeight = data.getPinnedDownHeader().getHeight();
                 prevFooterHeight += data.getPinnedDownHeader().getHeight();
                 prevFooterRowsCount++;
             }
@@ -651,35 +649,49 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
         // - current scroll position of the form
         // - previous content of header/footer (see step A)
 
+
+
+
         boolean updateUi = false;
         int pinnedUpCount = 0;
         int pinnedDownCount = 0;
+
+        int ddd = 0;
         for (SectionData data : sectionsData) {
             float sectionHeaderY = data.getUnpinnedHeader().getY();
 
-            if ((scrollDown && prevHeaderRowsCount < maxHeaderRows && sectionHeaderY < scrollY + prevHeaderHeight) ||
-                (scrollUp   && prevHeaderRowsCount < maxHeaderRows && sectionHeaderY < scrollY + prevHeaderHeight - headerRowHeight) ||
+            ddd++;
+            if (ddd == sectionsData.size()-1) {
+                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ sectionHeaderY [value=%s]", sectionHeaderY));
+                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ scrollY [value=%s]", scrollY));
+                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ prevFooterRowsCount [value=%s]", prevFooterRowsCount));
+                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ maxFooterRows [value=%s]", maxFooterRows));
+                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ prevHeaderHeight [value=%s]", prevHeaderHeight));
+                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ prevFooterHeight [value=%s]", prevFooterHeight));
+                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ headerRowHeight [value=%s]", headerRowHeight));
+                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ footerRowHeight [value=%s]", footerRowHeight));
+                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ scrollY + prevHeaderHeight - headerRowHeight [value=%s]", scrollY + prevHeaderHeight - headerRowHeight));
+                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ sectionHeaderY < scrollY + prevHeaderHeight - headerRowHeight [value=%s]", sectionHeaderY < scrollY + prevHeaderHeight - headerRowHeight));
+            }
+
+            if ((scrollDown && prevHeaderRowsCount <  maxHeaderRows && sectionHeaderY < scrollY + prevHeaderHeight) ||
+                (scrollUp   && prevHeaderRowsCount <  maxHeaderRows && sectionHeaderY < scrollY + prevHeaderHeight - headerRowHeight) ||
                 (scrollDown && prevHeaderRowsCount >= maxHeaderRows && sectionHeaderY < scrollY + prevHeaderHeight - headerRowHeight) ||
                 (scrollUp   && prevHeaderRowsCount >= maxHeaderRows && sectionHeaderY < scrollY + prevHeaderHeight - headerRowHeight))
             {
                 updateUi |= data.update(SectionData.HeaderState.PINNED_UP);
                 pinnedUpCount++;
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ sectionHeaderY [value=%s]", sectionHeaderY));
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ scrollY [value=%s]", scrollY));
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ prevHeaderHeight [value=%s]", prevHeaderHeight));
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ headerRowHeight [value=%s]", headerRowHeight));
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ scrollY + prevHeaderHeight - headerRowHeight [value=%s]", scrollY + prevHeaderHeight - headerRowHeight));
-                Log.d(StickyLinearLayout.class.getSimpleName(), String.format("@@@ sectionHeaderY < scrollY + prevHeaderHeight - headerRowHeight [value=%s]", sectionHeaderY < scrollY + prevHeaderHeight - headerRowHeight));
+
+            } else if ((scrollUp   && prevFooterRowsCount <  maxFooterRows && sectionHeaderY > scrollY + formViewportHeight - prevFooterHeight - footerRowHeight) ||
+                       (scrollDown && prevFooterRowsCount <  maxFooterRows && sectionHeaderY > scrollY + formViewportHeight - prevFooterHeight) ||
+                       (scrollUp   && prevFooterRowsCount >= maxFooterRows && sectionHeaderY > scrollY + formViewportHeight - prevFooterHeight) ||
+                       (scrollDown && prevFooterRowsCount >= maxFooterRows && sectionHeaderY > scrollY + formViewportHeight - prevFooterHeight))
+            {
+                updateUi |= data.update(SectionData.HeaderState.PINNED_DOWN);
+                pinnedDownCount++;
 
             } else {
-
-                if(sectionHeaderY > scrollY + formViewportHeight - prevFooterHeight) {
-                    updateUi |= data.update(SectionData.HeaderState.PINNED_DOWN);
-                    pinnedDownCount++;
-                } else {
-                    // fallback
-                    updateUi |= data.update(SectionData.HeaderState.UNPINNED);
-                }
+                updateUi |= data.update(SectionData.HeaderState.UNPINNED);
             }
 
             // Debug
