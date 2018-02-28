@@ -14,7 +14,6 @@ import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
-import android.widget.TextView;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -760,7 +759,7 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
             // ensure the header is fully scrolled.
             // It might be left partially scrolled from
             // previous animation if the scroll steps were too large.
-            headerScrollView.smoothScrollTo(0, headerScrollView.getBottom());
+            headerScrollView.smoothScrollTo(0, headerLayout.getHeight());
         }
 
         if (pinningFooter != null) {
