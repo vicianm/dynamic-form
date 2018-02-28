@@ -491,12 +491,7 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
 
     private boolean scrollToSection(SectionData sectionData) {
 
-        // Calculate header height at time user scrolls the
-        // form in a such way that <code>formView</code> is
-        // the first visible component of the form.
-        // We can rely on the fact that <code>sectionsData</code>
-        // are ordered the same way as views are shown in the header/footer.
-        int headerHeigthAfterScroll = 0;
+        int heightAfterScroll = 0;
         int scrollToSectionMargin = 0;
         for (SectionData data : sectionsData) {
             // We are done if we reached the view on which user clicked
@@ -504,15 +499,19 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
                 scrollToSectionMargin = sectionData.getScrollToSectionMargin();
                 break;
             }
-            headerHeigthAfterScroll += data.getUnpinnedHeader().getHeight();
+            heightAfterScroll += data.getUnpinnedHeader().getHeight();
         }
+        heightAfterScroll =
+                Math.min(
+                    heightAfterScroll,
+                    headerScrollView.getHeight());
 
         // Location where we should first
         // scroll the form in order to make the section active
         // (Y value of section header)
         int sectionY =
                 (int)sectionData.getUnpinnedHeader().getY()
-                - headerHeigthAfterScroll
+                - heightAfterScroll
                 - scrollToSectionMargin;
 
         // First check if any scroll is needed or possible.
