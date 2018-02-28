@@ -775,7 +775,7 @@ public class StickyLinearLayout extends LinearLayout implements View.OnScrollCha
 
             // calculate new scroll position
             int newScroll = (int) (
-                    footerRowHeight
+                    (prevFooterRowsCount - maxFooterRows + 1) * footerRowHeight
                     - pinningFooter.getUnpinnedHeader().getY()
                     + scrollY
                     + formViewportHeight
